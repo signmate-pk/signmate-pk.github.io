@@ -14,8 +14,16 @@ function key(entry) {
   return String(entry.gloss ?? entry.id ?? "").replace(/^psl:/, "").toLowerCase();
 }
 
+// Some labels carry their own end mark (the PSL bundle's Urdu for "where" is "کہاں؟"). The clause adds
+// one end mark itself, so a label's own mark is dropped here to avoid "کہاں؟؟".
+const END_MARKS = /[\s?؟۔.!]+$/u;
+
+function label(entry, language) {
+  return String((language === "ur" ? (entry.urdu || entry.english) : entry.english) ?? "").trim();
+}
+
 function words(entry, language) {
-  return language === "ur" ? (entry.urdu || entry.english) : entry.english;
+  return label(entry, language).replace(END_MARKS, "");
 }
 
 function capitalise(text) {
@@ -50,8 +58,8 @@ export function buildSentence(entries, language = "en") {
   for (const entry of entries) {
     if (EXPRESSIONS.has(key(entry))) {
       flush();
-      const text = words(entry, language);
-      const end = language === "ur" ? "۔" : (/[.!?]$/.test(text) ? "" : ".");
+      const text = label(entry, language);
+      const end = /[.!?؟۔]$/u.test(text) ? "" : (language === "ur" ? "۔" : ".");
       sentences.push(language === "en" ? capitalise(text) + end : text + end);
     } else {
       run.push(entry);

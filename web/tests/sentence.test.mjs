@@ -35,3 +35,20 @@ test("never a content word that no gloss accounts for", () => {
     for (const word of contentWords(buildSentence(sequence).text)) assert.ok(glossWords.has(word), word);
   }
 });
+
+// The PSL bundle's Urdu labels for question words carry their own "؟" (manifest: where -> "کہاں؟"); the
+// clause adds one end mark, so the sentence must not end in "؟؟". Expressions keep their own mark.
+const DOCTOR = e("doctor", "Doctor", "ڈاکٹر");
+const WHERE_MARKED = e("where", "Where", "کہاں؟");
+const HOW_ARE_YOU = e("how_are_you", "How are you?", "آپ کیسے ہیں؟");
+
+test("a label's own question mark is not doubled", () => {
+  assert.equal(buildSentence([DOCTOR, WHERE_MARKED], "ur").text, "ڈاکٹر کہاں؟");
+  assert.equal(buildSentence([DOCTOR, WHERE_MARKED]).text, "Where doctor?");
+});
+
+test("an expression that already ends in a mark gets no second one", () => {
+  assert.equal(buildSentence([HOW_ARE_YOU]).text, "How are you?");
+  assert.equal(buildSentence([HOW_ARE_YOU], "ur").text, "آپ کیسے ہیں؟");
+  assert.equal(buildSentence([HELLO], "ur").text, "ہیلو۔");
+});
