@@ -13,7 +13,12 @@ export default function HelperChat({ vocabulary, pslClasses }) {
   useEffect(() => {
     fetch(assetUrl("psl_dictionary.json")).then((r) => (r.ok ? r.json() : { entries: [] })).then((data) => setDictionary(data.entries || [])).catch(() => {});
   }, []);
-  useEffect(() => { end.current?.scrollIntoView?.({ block: "nearest" }); }, [messages]);
+  // Scroll only the message box, and only once there are messages. scrollIntoView() also scrolled the whole
+  // page on load, so phone visitors landed halfway down, below the camera.
+  useEffect(() => {
+    const box = end.current?.parentElement;
+    if (box && messages.length) box.scrollTop = box.scrollHeight;
+  }, [messages]);
   const ask = (event) => {
     event.preventDefault();
     if (!text.trim()) return;
