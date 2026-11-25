@@ -367,6 +367,8 @@ h1, h2, h3, p { margin-top: 0; }
 .toggle-row span { color: var(--muted); line-height: 1.4; }
 .camera-overlay-top .hands-chip { margin-left: 8px; }
 @media (max-width: 800px) { .psl-status { max-width: none; width: 100%; } }
+/* Wide screens: the panel grows once the PSL model has loaded; keep its space so the camera below does not jump. */
+@media (min-width: 801px) { .welcome-row > .psl-status { min-height: 340px; } }
 
 /* PSL suggestions (Tier B): always labelled, confirmed by the person before anything is spoken */
 .psl-suggestion { border: 1px solid var(--panel-border); background: var(--panel-2); border-radius: 14px; padding: 14px 16px; margin: 12px 0; display: grid; gap: 10px; }

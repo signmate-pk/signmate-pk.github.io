@@ -546,7 +546,7 @@ export default function App() {
       {(view === "translate" || exhibition) && signLanguage === "ASL" && <Suspense fallback={<div className="panel asl-loading" role="status">Loading ASL mode…</div>}><AslMode requestCamera={requestAslCamera} voiceEnabled={voiceEnabled} /></Suspense>}
       {(view === "translate" || exhibition) && signLanguage === "PSL" && <>
         {!exhibition && <section className="welcome-row">
-          <div className="welcome-intro"><div className="eyebrow"><span className="pulse-dot" /> Pakistan Sign Language · runs on this device</div><h1>Sign in PSL. Read it in Urdu and English.</h1><p>{pslReady ? `SignMate knows ${pslSigns} PSL signs. ` : ""}It shows what it saw and asks you before it speaks. Your camera video never leaves this device.</p></div>
+          <div className="welcome-intro"><div className="eyebrow"><span className="pulse-dot" /> Pakistan Sign Language · runs on this device</div><h1>Sign in PSL. Read it in Urdu and English.</h1><p>It shows what it saw and asks you before it speaks. Your camera video never leaves this device.</p></div>
           <div className="psl-status panel" role="status">
             <span className="section-kicker">PSL RECOGNITION</span>
             {pslReady ? <>
