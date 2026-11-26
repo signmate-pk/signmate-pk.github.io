@@ -56,7 +56,7 @@ function points(list) {
   return list.map((point) => [point.x, point.y, point.z ?? 0]);
 }
 
-// Returns { spec, parts, delegates, processVideoFrame(video, timestampMs, options) -> { frame, raw, timings }, fps, close() }.
+// Returns { spec, parts, delegates, forget(), processVideoFrame(video, timestampMs, options) -> { frame, raw, timings, fresh }, fps, close() }.
 export async function createCaptureV2({ spec, wasmPath = assetUrl("wasm"), modelBase = assetUrl("models/"), parts = PARTS, delegate = "GPU" } = {}) {
   const featureSpec = spec ?? (await loadFeatureSpecV2());
   if (featureSpec.feature_version !== FEATURE_VERSION) throw new Error(`Unsupported feature version ${featureSpec.feature_version}`);
@@ -99,7 +99,13 @@ export async function createCaptureV2({ spec, wasmPath = assetUrl("wasm"), model
   const meter = new FpsMeter();
   let lastTimestamp = -1;
 
-  function processVideoFrame(video, timestampMs = performance.now(), { inputMirrored = false } = {}) {
+  // The last pose and face, kept so a frame may skip them (options.run) and reuse the previous result.
+  // Restores the per-frame cadence of the 19 Nov baseline build (baseline/v1-site, capture_v2 chunk).
+  const last = { pose: null, face: null, ran: { pose: false, face: false } };
+
+  // options.run: null (run every part); per part, false = reuse the last result (runs if there is none yet),
+  // "off" = neither run nor reuse (light mode); or a function (hands) -> that object, called after the hands.
+  function processVideoFrame(video, timestampMs = performance.now(), { inputMirrored = false, run = null } = {}) {
     const width = video.videoWidth;
     const height = video.videoHeight;
     if (!width || !height) return null;
@@ -116,30 +122,48 @@ export async function createCaptureV2({ spec, wasmPath = assetUrl("wasm"), model
       });
       timings.hands = performance.now() - started;
     }
+    const plan = typeof run === "function" ? run(raw.hands) : run;
+    const fresh = { pose: false, face: false };
     if (tasks.pose) {
-      const started = performance.now();
-      const result = tasks.pose.detectForVideo(video, timestamp);
-      const first = result.landmarks?.[0];
-      if (first) raw.pose = first.map((point) => [point.x, point.y, point.z ?? 0, point.visibility ?? 1]);
-      timings.pose = performance.now() - started;
+      if (plan?.pose === "off") { /* light mode: no pose this frame and none reused */ }
+      else if (plan?.pose === false && last.ran.pose) raw.pose = last.pose;
+      else {
+        const started = performance.now();
+        const result = tasks.pose.detectForVideo(video, timestamp);
+        const first = result.landmarks?.[0];
+        if (first) raw.pose = first.map((point) => [point.x, point.y, point.z ?? 0, point.visibility ?? 1]);
+        last.pose = raw.pose;
+        last.ran.pose = true;
+        fresh.pose = true;
+        timings.pose = performance.now() - started;
+      }
     }
     if (tasks.face) {
-      const started = performance.now();
-      const result = tasks.face.detectForVideo(video, timestamp);
-      const first = result.faceLandmarks?.[0];
-      if (first) raw.face = points(first);
-      timings.face = performance.now() - started;
+      if (plan?.face === "off") { /* not run and not reused */ }
+      else if (plan?.face === false && last.ran.face) raw.face = last.face;
+      else {
+        const started = performance.now();
+        const result = tasks.face.detectForVideo(video, timestamp);
+        const first = result.faceLandmarks?.[0];
+        if (first) raw.face = points(first);
+        last.face = raw.face;
+        last.ran.face = true;
+        fresh.face = true;
+        timings.face = performance.now() - started;
+      }
     }
     const frame = canonicalizeFrame(raw, featureSpec);
     meter.tick();
     // raw keeps the full pose (33) and face mesh (478) in memory for ASL mode; nothing is stored.
-    return { frame, raw, timings };
+    return { frame, raw, timings, fresh };
   }
 
   return {
     spec: featureSpec,
     parts: Object.keys(tasks),
     delegates,
+    // Drop the remembered pose and face (call it when the camera restarts or the person leaves the frame).
+    forget() { last.pose = null; last.face = null; last.ran.pose = false; last.ran.face = false; },
     processVideoFrame,
     get fps() { return meter.fps; },
     close() {
