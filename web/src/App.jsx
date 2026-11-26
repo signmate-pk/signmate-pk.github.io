@@ -98,14 +98,16 @@ export default function App() {
     return () => { alive = false; };
   }, []);
 
-  // Warm MediaPipe and the model in the background on camera screens, so "Turn on camera" is quick.
+  // Warm MediaPipe and the model in the background on camera screens, so "Turn on camera" is quick. Only for
+  // visitors who have used the camera before: a first visit must not download ~30 MB of trackers unasked
+  // (prepaid mobile data), and never in data-saver mode.
   useEffect(() => {
-    if (bundle.status !== "ready" || !["words", "sentences"].includes(route) || navigator.connection?.saveData) return undefined;
+    if (!consented || bundle.status !== "ready" || !["words", "sentences"].includes(route) || navigator.connection?.saveData) return undefined;
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
     const cancel = window.cancelIdleCallback || clearTimeout;
     const id = idle(() => { try { warmUp({ manifest: bundle.manifest, spec: bundle.spec }); } catch { /* the stage reports errors */ } }, { timeout: 4000 });
     return () => cancel(id);
-  }, [bundle, route]);
+  }, [bundle, route, consented]);
 
   useEffect(() => { if (engine) engine.setAdjust((scores) => (settings.learn && personalRef.current ? adapt(scores, personalRef.current) : scores)); }, [engine, settings.learn]);
 

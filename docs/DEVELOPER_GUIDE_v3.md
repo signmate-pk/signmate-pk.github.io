@@ -7,8 +7,8 @@
 It is a sign language translator which will help deaf people to communicate.
 
 **Try it in a browser:** <https://signmate-pk.github.io/> (camera needed; nothing leaves your device).
-SignMate was called SignBridge until 2026-11-21. This is its only website: the old address
-(`shaafrajput06-tech.github.io/SignBridge/`) was switched off ([docs/DOMAIN.md](docs/DOMAIN.md)). How the website is built and what works there:
+SignMate was called SignBridge until 2026-11-21. This is its only website: the old address was switched
+off ([docs/DOMAIN.md](docs/DOMAIN.md)). How the website is built and what works there:
 [docs/WEBSITE.md](docs/WEBSITE.md). Setting up on another computer: [docs/SETUP_NEW_LAPTOP.md](docs/SETUP_NEW_LAPTOP.md).
 
 SignMate is a Pakistan Sign Language (PSL) ↔ Urdu/English translator that runs on your own device.
