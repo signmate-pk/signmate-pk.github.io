@@ -64,14 +64,13 @@ try {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(base);
-  await page.getByRole("button", { name: "ASL", exact: true }).click();
+  // ASL mode lives under More → ASL mode (#/asl) in the product UI. On a first visit the camera button
+  // opens the welcome card with the privacy notice; its "Turn on camera" starts the ASL camera.
+  await page.goto(`${base}#/asl`);
+  const welcome = page.locator(".onboarding");
+  await welcome.waitFor({ timeout: 15_000 }).catch(() => null);
+  if (await welcome.count()) await welcome.getByRole("button", { name: /Turn on camera/ }).click();
   await page.getByRole("button", { name: /Start ASL camera/ }).click();
-  const consent = page.locator(".help-modal input[type=checkbox]");
-  if (await consent.count()) {
-    await consent.check();
-    await page.getByRole("button", { name: /Agree and enable camera/ }).click();
-  }
   await page.waitForSelector(".hands-chip", { timeout: 180_000 });
   await page.waitForTimeout(4000);
   result.app = {
@@ -90,37 +89,30 @@ try {
   console.log(`ASL mode in the app FAILED: ${result.appError}`);
 }
 
-// 3. The PSL screen (the default): capture v2 tracks both hands, PSL suggestions are on when the bundle
-//    loads, and the Phase 0 gesture demo is off until the person turns it on.
+// 3. The PSL Words screen (the default): the camera starts from the welcome card, both hands are tracked,
+//    the PSL bundle loads (the sign gallery counts its signs), and the Phase 0 gesture demo is gone (its hand
+//    shapes are not PSL; removed from the product UI on 2026-11-26).
 try {
   const context = await browser.newContext({ permissions: ["camera"] });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(base);
-  const demoSwitch = page.locator(".psl-status label", { hasText: "Gesture demo" }).locator("input[type=checkbox]");
-  const demoOffAtStart = !(await demoSwitch.isChecked());
-  await page.getByRole("button", { name: /Enable camera/ }).first().click();
-  const consent = page.locator(".help-modal input[type=checkbox]");
-  if (await consent.count()) {
-    await consent.check();
-    await page.getByRole("button", { name: /Agree and enable camera/ }).click();
-  }
-  await page.waitForSelector(".camera-card .hands-chip", { timeout: 180_000 });
+  await page.goto(`${base}#/words`);
+  const welcome = page.locator(".onboarding");
+  await welcome.waitFor({ timeout: 15_000 });
+  await welcome.getByRole("button", { name: /Turn on camera/ }).click();
+  await page.waitForSelector(".stage.is-live", { timeout: 180_000 });
   await page.waitForTimeout(4000);
-  await demoSwitch.check(); // the demo can still be turned on, and the camera keeps running
-  await page.waitForTimeout(1500);
   result.psl = {
-    status: (await page.locator(".psl-status strong").innerText()).trim(),
-    demoOffAtStart,
-    camera: (await page.locator(".camera-card .camera-indicator").innerText()).trim(),
-    hands: (await page.locator(".camera-card .hands-chip").innerText()).trim(),
-    modeAfterDemoOn: (await page.locator(".overlay-mode").innerText()).trim(),
-    cameraProblem: (await page.locator(".camera-placeholder").count()) ? (await page.locator(".camera-placeholder").innerText()).replace(/\s+/g, " ").slice(0, 160) : null,
+    status: (await page.locator("#gallery-title").innerText()).trim(),
+    gestureDemoGone: (await page.getByText("Gesture demo").count()) === 0,
+    live: (await page.locator(".stage.is-live").count()) === 1,
+    hands: (await page.locator(".stage .pill[class*=hands-]").innerText().catch(() => "")).trim(),
+    cameraProblem: (await page.locator(".stage-error").count()) ? (await page.locator(".stage-error").innerText()).replace(/\s+/g, " ").slice(0, 160) : null,
     errors,
   };
-  if (result.psl.camera !== "Camera on" || !demoOffAtStart || result.psl.cameraProblem || errors.length) failed = true;
-  console.log(`PSL screen: ${result.psl.status}; ${result.psl.camera}; ${result.psl.hands}; demo off at start ${demoOffAtStart}; ${errors.length} page errors`);
+  if (!result.psl.live || !result.psl.gestureDemoGone || result.psl.cameraProblem || errors.length) failed = true;
+  console.log(`PSL screen: ${result.psl.status}; live ${result.psl.live}; ${result.psl.hands}; ${errors.length} page errors`);
   await context.close();
 } catch (error) {
   result.pslError = String(error.message || error).split("\n")[0];

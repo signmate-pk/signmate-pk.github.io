@@ -2,24 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#10211f" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2383d7b8'/%3E%3Ctext x='32' y='44' font-family='Arial' font-weight='700' font-size='36' text-anchor='middle' fill='%230d1917'%3ES%3C/text%3E%3C/svg%3E" />
-    <meta name="description" content="SignMate: Pakistan Sign Language to Urdu and English, on your device. PSL sign suggestions, a separate ASL mode, PSL dictionary videos and offline use." />
-    <meta property="og:title" content="SignMate: Pakistan Sign Language to Urdu and English" />
-    <meta property="og:description" content="Sign in PSL and read it in Urdu and English. Runs in your browser; your camera video never leaves your device." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f4fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0b1c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="description" content="SignMate turns Pakistan Sign Language into Urdu and English on your own device. Sign, confirm, speak; reply in large type with real PSL videos. Free, offline-capable, no account." />
+    <meta property="og:title" content="SignMate: talk face to face in Pakistan Sign Language" />
+    <meta property="og:description" content="Sign in PSL and it speaks in Urdu or English, after you confirm. Runs in your browser; your camera video never leaves your device." />
     <meta property="og:url" content="https://signmate-pk.github.io/" />
     <meta property="og:type" content="website" />
-    <title>SignMate — Hand signs into words</title>
+    <title>SignMate — Pakistan Sign Language to Urdu and English</title>
+    <style>
+      /* First paint before the app script runs: the same colours and layout as the app, so nothing jumps. */
+      body{margin:0;background:#f5f4fb;color:#16142c;font:16px/1.55 Manrope,Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+      @media (prefers-color-scheme:dark){body{background:#0d0b1c;color:#f3f1ff}}
+      .boot{min-height:100vh;display:grid;grid-template-rows:auto 1fr}
+      .boot header{display:flex;align-items:center;gap:10px;padding:12px 16px}
+      .boot i{width:34px;height:34px;border-radius:12px;background:linear-gradient(118deg,#4f46e5,#8b3fd9 52%,#d6337a)}
+      .boot main{padding:14px}
+      .boot .stage{height:min(62vh,620px);min-height:300px;border-radius:26px;background:radial-gradient(120% 80% at 50% 0%,#2a2260,#151233 45%,#0f0d22);display:grid;place-items:center;color:#f6f4ff;text-align:center;padding:20px}
+      .boot h1{font-size:24px;margin:0;letter-spacing:-.02em}
+    </style>
   </head>
   <body>
     <div id="root">
-      <!-- Shown until the app starts (React replaces it), so the first paint has the real heading. -->
-      <div class="app-shell theme-dark">
-        <header class="topbar"><a class="brand" href="./"><span class="brand-mark">S</span><span><strong>SignMate</strong><small>Words that connect</small></span></a></header>
-        <main class="page-wrap"><section class="welcome-row"><div class="welcome-intro"><div class="eyebrow"><span class="pulse-dot"></span> Pakistan Sign Language · runs on this device</div><h1>Sign in PSL. Read it in Urdu and English.</h1><p>It shows what it saw and asks you before it speaks. Your camera video never leaves this device.</p></div></section></main>
-      </div>
+      <div class="boot"><header><i></i><strong>SignMate</strong></header><main><div class="stage"><div><h1>Talk face to face.</h1><p>Pakistan Sign Language to Urdu and English, on this device.</p></div></div></main></div>
     </div>
+    <noscript>SignMate needs JavaScript to read signs on your device.</noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
