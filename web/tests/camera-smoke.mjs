@@ -1,5 +1,6 @@
-// Browser smoke test with a fake camera: start the camera, then toggle voice, switch camera,
+// Browser smoke test with a fake camera: start the camera, then switch screens, flip the camera,
 // and stop/start again. Each must leave hand tracking running without crashing the page.
+// Updated for the product UI (2026-11-26): "Turn on camera", first-visit privacy card, Words/Sentences tabs.
 //
 // Run from the web folder:  npm run test:smoke   (builds first, then serves dist/ locally)
 // Needs Playwright with Chromium. One-time setup, kept out of package.json so the exhibition
@@ -8,7 +9,6 @@ import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { preview } from "vite";
 
 const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
@@ -30,12 +30,12 @@ if (!externalUrl && !existsSync(path.join(webDir, "dist", "index.html"))) {
 }
 
 const WAIT_MS = Number(process.env.SMOKE_WAIT_MS || 6000);
-const server = externalUrl ? null : await preview({ root: webDir, logLevel: "silent", preview: { host: "127.0.0.1", port: 4174, strictPort: false, proxy: {} } });
+const server = externalUrl ? null : await (await import("vite")).preview({ root: webDir, logLevel: "silent", preview: { host: "127.0.0.1", port: 4174, strictPort: false, proxy: {} } });
 const url = externalUrl || server.resolvedUrls.local[0];
 console.log(`Camera smoke test against ${url}`);
 
 async function scenario(name, action, expectedCameraStarts) {
-  const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
+  const browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
   const context = await browser.newContext({ permissions: ["camera"] });
   await context.addInitScript(() => {
     window.__cameraStarts = 0;
@@ -51,19 +51,19 @@ async function scenario(name, action, expectedCameraStarts) {
   const problems = [];
   try {
     await page.goto(url);
-    await page.getByRole("button", { name: /Enable camera/ }).first().click();
-    await page.locator(".help-modal input[type=checkbox]").check();
-    await page.getByRole("button", { name: /Agree and enable camera/ }).click();
+    // First visit: the welcome card (with the privacy notice) is open; its "Turn on camera" starts the camera.
+    await page.waitForSelector(".onboarding", { timeout: 10000 }).catch(() => null);
+    if (!(await page.locator(".onboarding").count())) await page.getByRole("button", { name: /Turn on camera/ }).first().click();
+    await page.locator(".onboarding").getByRole("button", { name: /Turn on camera/ }).click();
     await page.waitForTimeout(WAIT_MS);
     if (action) {
       await action(page);
       await page.waitForTimeout(WAIT_MS);
     }
     if (!crashed) {
-      const errorPanel = await page.locator(".camera-placeholder").count();
-      if (errorPanel) problems.push(`camera panel shows: ${(await page.locator(".camera-placeholder").innerText()).replace(/\s+/g, " ").slice(0, 140)}`);
-      const indicator = (await page.locator(".camera-indicator").innerText()).trim();
-      if (indicator !== "Camera on") problems.push(`indicator reads "${indicator}"`);
+      const errorPanel = await page.locator(".stage-error").count();
+      if (errorPanel) problems.push(`camera stage shows: ${(await page.locator(".stage-error").innerText()).replace(/\s+/g, " ").slice(0, 140)}`);
+      if (!(await page.locator(".stage.is-live").count())) problems.push("the camera stage is not live");
       const starts = await page.evaluate(() => window.__cameraStarts);
       if (expectedCameraStarts !== undefined && starts !== expectedCameraStarts) problems.push(`camera was started ${starts} times, expected ${expectedCameraStarts}`);
     }
@@ -80,12 +80,12 @@ async function scenario(name, action, expectedCameraStarts) {
 const results = [];
 try {
   results.push(await scenario("camera starts and keeps running", null, 1));
-  results.push(await scenario("voice toggle does not restart or break the camera", (page) => page.getByRole("button", { name: /^.?Voice (on|off)$/ }).first().click(), 1));
+  results.push(await scenario("moving from Words to Sentences keeps the camera on", (page) => page.getByRole("link", { name: /Sentences/ }).click(), 2));
   results.push(await scenario("switching front/rear camera keeps tracking alive", (page) => page.getByRole("button", { name: /Switch front or rear camera/ }).click(), 2));
   results.push(await scenario("stop then start the camera again", async (page) => {
     await page.getByRole("button", { name: /Stop camera/ }).click();
     await page.waitForTimeout(1000);
-    await page.getByRole("button", { name: /Enable camera/ }).first().click();
+    await page.getByRole("button", { name: /Turn on camera/ }).first().click();
   }, 2));
 } finally {
   await server?.close();

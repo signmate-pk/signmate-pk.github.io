@@ -226,6 +226,27 @@ assets:
       signers: "12 people (2 team members + 10 volunteers); Deaf status not stated"
     notes: "Evaluation only: nothing trained on it may ship (an encoder pretrained on it would ship its weights), because the app is going to public stores. Ask the authors before any other use."
 
+  - id: psl-bakhtyar12-landmarks
+    name: "Pakistani Sign Language landmarks (Hugging Face Bakhtyar12/Pakistani-Sign-Language)"
+    kind: dataset
+    sign_language: PSL
+    label_scope: psl
+    source_url: https://huggingface.co/datasets/Bakhtyar12/Pakistani-Sign-Language
+    licence: MIT (as stated on the dataset card)
+    licence_url: https://opensource.org/license/mit
+    licence_evidence: "Hugging Face dataset card read 2026-11-26: licence field 'mit'; text says it is released under the MIT License for open research and educational use. Card does not name the signers, how consent was obtained, the number of signers, or the class list."
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
+    conditions: [attribution, provenance_unverified, consent_required, language_unconfirmed]
+    attribution: "Pakistani Sign Language dataset by Hugging Face user Bakhtyar12 (MIT licence, as stated on the dataset card)."
+    status: unverified
+    checked_on: "2026-11-26"
+    checked_by: agent
+    files: []
+    facts:
+      format: "pre-extracted MediaPipe landmarks, 30 frames x 225 values (21 x 3 per hand, 33 pose x 3); no video"
+      scope: "alphabets, words and sentences (card); class count and signers not stated"
+    notes: "Candidate for v3.1: it has pose points, which SignSpeak lacks. Before any use: ask the uploader who the signers are, how consent was given, and whether the signs are PSL as used by Deaf signers (CLAUDE.md 2, 4); check whether it overlaps SignSpeak; then set allowed_uses. tools/psl_data/discover.py refuses it until then."
+
   - id: psl-128
     name: "PSL-128: multi-signer Pakistan Sign Language video dataset (Usman, Farooq, Ali, Alhejaili)"
     kind: dataset

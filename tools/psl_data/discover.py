@@ -22,6 +22,9 @@ from data_engine.ledger import assert_allowed
 
 UA = {"User-Agent": "SignBridge-psl-data/1.0 (https://github.com/shaafrajput06-tech/SignBridge)"}
 SIGNSPEAK_HF = "mohibkhansherwani/DynamicWordLevelPakistanSignLanguageDataset"
+# Candidate landmark datasets on Hugging Face: ledger id -> repository. Listed only once the ledger allows
+# training; until then assert_allowed refuses and the reason is printed (data/LICENSES.yaml notes say why).
+HF_LANDMARKS = {"psl-bakhtyar12-landmarks": "Bakhtyar12/Pakistani-Sign-Language"}
 MENDELEY = {  # ledger id -> (Mendeley dataset id, version)
     "psl-pkslmnm": ("m3m9924p3v", 2),
     "psl-ualpha40": ("3pvnnckxyb", 3),
@@ -142,7 +145,20 @@ def mendeley(ledger_id: str, dataset: str, version: int) -> None:
         print(f"  {item.get('filename')} | {details.get('size')} bytes | {details.get('content_type')} | folder={item.get('folder_id')}")
 
 
+def huggingface_landmarks(ledger_id: str, repo: str) -> None:
+    assert_allowed(ledger_id, "train_labels")
+    files = json.loads(get(f"https://huggingface.co/api/datasets/{repo}/tree/main?recursive=true"))
+    print(f"{ledger_id} (Hugging Face {repo}): {len(files)} entries")
+    for item in files[:40]:
+        print(f"  {item.get('path')} | {item.get('size')} bytes")
+
+
 def main() -> None:
+    for ledger_id, repo in HF_LANDMARKS.items():
+        try:
+            huggingface_landmarks(ledger_id, repo)
+        except Exception as error:  # noqa: BLE001 - a refused or missing dataset must not stop the others
+            print(f"{ledger_id}: not used ({error})")
     try:
         signspeak()
     except Exception as error:  # noqa: BLE001

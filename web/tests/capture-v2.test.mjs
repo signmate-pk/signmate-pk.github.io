@@ -82,3 +82,29 @@ test("fps meter", () => {
   for (let i = 0; i < 10; i += 1) meter.tick(i * 40);
   assert.equal(Math.round(meter.fps), 25);
 });
+
+// Per-part cadence (restored from the 19 Nov baseline build): a frame may reuse the last pose, or skip
+// pose and face entirely ("off", light mode). The hands always run.
+test("run option: reuse the last pose, or switch pose and face off", async () => {
+  const item = fixture.canonicalize_cases.find((c) => !c.raw.input_mirrored && c.raw.pose && c.raw.face && c.raw.hands.length === 2);
+  fake.settings.hands = item.raw.hands.map((hand) => ({ points: asObjects(hand.landmarks), label: hand.handedness }));
+  fake.settings.pose = asObjects(item.raw.pose);
+  fake.settings.face = asObjects(item.raw.face);
+  const capture = await createCaptureV2({ spec });
+  const video = { videoWidth: item.raw.image_width, videoHeight: item.raw.image_height };
+  fake.calls.detect.length = 0;
+  const first = capture.processVideoFrame(video, 100, { run: { pose: false, face: false } });
+  assert.deepEqual(first.fresh, { pose: true, face: true }, "nothing to reuse yet, so both run");
+  const second = capture.processVideoFrame(video, 133, { run: { pose: false, face: false } });
+  assert.deepEqual(second.fresh, { pose: false, face: false });
+  assert.deepEqual(second.raw.pose, first.raw.pose);
+  assert.deepEqual(fake.calls.detect.map((c) => c.kind), ["hands", "pose", "face", "hands"]);
+  const off = capture.processVideoFrame(video, 166, { run: { pose: "off", face: "off" } });
+  assert.equal(off.raw.pose, null);
+  assert.equal(off.raw.face, null);
+  assert.ok(off.frame.left_hand || off.frame.right_hand, "hands still tracked without pose");
+  capture.forget();
+  const after = capture.processVideoFrame(video, 200, { run: { pose: false } });
+  assert.equal(after.fresh.pose, true, "after forget() the pose runs again");
+  capture.close();
+});

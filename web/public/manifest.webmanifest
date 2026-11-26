@@ -1,0 +1,23 @@
+{
+  "name": "SignMate — Pakistan Sign Language",
+  "short_name": "SignMate",
+  "description": "Pakistan Sign Language to Urdu and English, on your device. Sign, confirm, speak; reply in large type with PSL videos.",
+  "start_url": "./#/words",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f4fb",
+  "theme_color": "#4f46e5",
+  "lang": "en",
+  "dir": "auto",
+  "categories": ["accessibility", "education", "utilities"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Sentences", "url": "./#/sentences" },
+    { "name": "Reply", "url": "./#/reply" },
+    { "name": "Guided tour", "url": "./#/tour" }
+  ]
+}

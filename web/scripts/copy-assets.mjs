@@ -60,6 +60,9 @@ await mkdir(path.join(publicDir, "models", "asl"), { recursive: true });
 await mkdir(path.join(publicDir, "wasm"), { recursive: true });
 for (const name of ["vocabulary.json"]) await cp(path.join(project, name), path.join(publicDir, name));
 for (const name of ["feature_spec_v2.json", "asl_islr_spec.json", "psl_hands_spec.json", "site_pages.json"]) await cp(path.join(project, "shared_data", name), path.join(publicDir, name));
+// Guided tour and practice references: six real SignSpeak hand-landmark recordings (Apache-2.0, ledger
+// psl-signspeak-words allows redistribute_data) with the shipped model's saved answers (web/src/ui/recordings.js).
+await cp(path.join(project, "tests", "golden", "psl_parity_cases.json"), path.join(publicDir, "demo_signs.json"));
 await cp(path.join(project, "models", "hand_landmarker.task"), path.join(publicDir, "models", "hand_landmarker.task"));
 // The PSL bundle (manifest + model, committed under models/psl by the Stage 2 training run).
 if (await exists(path.join(project, "models", "psl", "manifest.json"))) {
