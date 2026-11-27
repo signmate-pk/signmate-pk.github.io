@@ -4,7 +4,6 @@ web/node_modules/
 web/dist/
 web/public/models/
 web/public/wasm/
-web/public/vocabulary.json
 web/public/feature_spec_v2.json
 mobile/.dart_tool/
 mobile/build/
@@ -54,8 +53,6 @@ data/web_learned/
 data/psl-*/
 out/
 web/public/clips/
-web/public/psl_clips.json
-web/public/psl_hands_spec.json
-web/public/psl_dictionary.json
 web/public/site_pages.json
-web/public/demo_signs.json
+web/public/asl_results.json
+web/public/tour/

@@ -22,7 +22,7 @@ try {
   process.exit(0);
 }
 // SMOKE_URL tests a server that is already running instead, e.g. the dev server that
-// start_web.bat starts:  set SMOKE_URL=http://127.0.0.1:5173/ && node tests/camera-smoke.mjs  (app.html is added)
+// start_web.bat starts:  set SMOKE_URL=http://127.0.0.1:5173/ && node tests/camera-smoke.mjs  (translate/ is added)
 const externalUrl = process.env.SMOKE_URL;
 if (!externalUrl && !existsSync(path.join(webDir, "dist", "index.html"))) {
   console.error("dist/ is missing. Run npm run build first (npm run test:smoke does this for you).");
@@ -31,8 +31,8 @@ if (!externalUrl && !existsSync(path.join(webDir, "dist", "index.html"))) {
 
 const WAIT_MS = Number(process.env.SMOKE_WAIT_MS || 6000);
 const server = externalUrl ? null : await (await import("vite")).preview({ root: webDir, logLevel: "silent", preview: { host: "127.0.0.1", port: 4174, strictPort: false, proxy: {} } });
-// The app lives at app.html (the site root is the project page, 2026-11-27).
-const url = new URL("app.html", externalUrl || server.resolvedUrls.local[0]).href;
+// The translator lives at translate/ (the site root is the project page; master v4, 2026-11-27).
+const url = new URL("translate/", externalUrl || server.resolvedUrls.local[0]).href;
 console.log(`Camera smoke test against ${url}`);
 
 async function scenario(name, action, expectedCameraStarts) {

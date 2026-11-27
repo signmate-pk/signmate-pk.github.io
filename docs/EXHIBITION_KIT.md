@@ -1,5 +1,9 @@
 # SignMate exhibition kit (master-v3 Stage 6)
 
+> **PSL version (master v3), kept for history.** SignMate is now ASL only and a website only (master v4, CLAUDE.md
+> section 10). This guide is rewritten for ASL in master-v4 Stage 7; until then, do not follow its PSL, offline-copy
+> or app steps.
+
 Everything here matches what the app really does on 2026-11-21. The numbers come from the project's
 reports: the "How well it works" page shows the same numbers, each with its dataset, test and date.
 

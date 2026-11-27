@@ -9,12 +9,12 @@ import QrCode from "./QrCode.jsx";
 import { LIVE_URL } from "./site.js";
 
 const ERRORS = {
-  permission: { en: "SignMate can't see the camera. Allow it in your browser settings, then tap Try again.", ur: "سائن میٹ کیمرہ نہیں دیکھ پا رہا۔ براؤزر کی سیٹنگز میں اجازت دیں، پھر \"دوبارہ کوشش\" دبائیں۔" },
-  insecure: { en: "Phone browsers only allow the camera on a secure (https) address. Open SignMate from its https link.", ur: "فون کے براؤزر صرف محفوظ (https) پتے پر کیمرہ چلاتے ہیں۔ سائن میٹ کو https لنک سے کھولیں۔" },
-  unsupported: { en: "This browser has no camera access. Try a recent Chrome, Edge or Safari.", ur: "اس براؤزر میں کیمرہ نہیں چلتا۔ نیا کروم، ایج یا سفاری آزمائیں۔" },
-  camera: { en: "The camera could not start. Another app may be using it.", ur: "کیمرہ شروع نہیں ہو سکا۔ شاید کوئی اور ایپ اسے استعمال کر رہی ہے۔" },
-  capture: { en: "Hand tracking could not start on this device.", ur: "اس ڈیوائس پر ہاتھوں کی ٹریکنگ شروع نہیں ہو سکی۔" },
-  model: { en: "The PSL model could not start on this device.", ur: "اس ڈیوائس پر پی ایس ایل ماڈل شروع نہیں ہو سکا۔" },
+  permission: { en: "SignMate can't see the camera. Allow it in your browser settings, then tap Try again." },
+  insecure: { en: "Phone browsers only allow the camera on a secure (https) address. Open SignMate from its https link." },
+  unsupported: { en: "This browser has no camera access. Try a recent Chrome, Edge or Safari." },
+  camera: { en: "The camera could not start. Another app may be using it." },
+  capture: { en: "Hand tracking could not start on this device." },
+  model: { en: "The ASL model could not start on this device." },
 };
 
 export default function CameraStage({ bundle, wanted, onWant, lang, onEvent, onEngine, practising, children, variant = "tall", emitHandsEvery = 0 }) {
@@ -30,12 +30,12 @@ export default function CameraStage({ bundle, wanted, onWant, lang, onEvent, onE
   const [advice, setAdvice] = useState(null);
   const [light, setLight] = useState(false);
   const [facing, setFacing] = useState("user");
-  const ready = Boolean(bundle?.manifest && bundle?.spec && bundle?.aslSpec);
+  const ready = Boolean(bundle?.aslSpec && bundle?.labels);
 
   useEffect(() => {
     if (!ready) return undefined;
     const engine = createEngine({
-      manifest: bundle.manifest, spec: bundle.spec, aslSpec: bundle.aslSpec, emitHandsEvery,
+      aslSpec: bundle.aslSpec, labels: bundle.labels, emitHandsEvery,
       onEvent: (event) => {
         if (event.type === "status") setPhase(event.phase);
         else if (event.type === "error") { setError(event); if (["permission", "insecure", "unsupported", "camera"].includes(event.code)) onWant(false); }
@@ -96,13 +96,13 @@ export default function CameraStage({ bundle, wanted, onWant, lang, onEvent, onE
         <p className="stage-cover-title">{practising ? `${t("practising", lang)}: ${practising}` : t("tagline", lang)}</p>
         <p className="stage-cover-sub">{t("framing", lang)}</p>
         <button className="btn btn-primary btn-lg" onClick={() => onWant(true)} disabled={!ready}><Icon name="camera" />{t("turnOnCamera", lang)}</button>
-        {!ready && <p className="stage-cover-sub">{bundle?.status === "missing" ? "The PSL model is not available on this device." : "Loading…"}</p>}
+        {!ready && <p className="stage-cover-sub">{bundle?.status === "missing" ? "The ASL model is not available on this device." : "Loading…"}</p>}
       </div>
     </div>}
 
     {error && <div className="stage-cover stage-error" role="alert">
       <div className="stage-cover-inner">
-        <p className="stage-cover-title">{(ERRORS[error.code] || ERRORS.camera)[lang === "ur" ? "ur" : "en"]}</p>
+        <p className="stage-cover-title">{(ERRORS[error.code] || ERRORS.camera).en}</p>
         <div className="row-wrap center">
           <button className="btn btn-primary" onClick={() => { setError(null); onWant(true); }}><Icon name="camera" />{t("tryAgain", lang)}</button>
           <a className="btn btn-glass" href="#/tour"><Icon name="play" />{t("tryTour", lang)}</a>

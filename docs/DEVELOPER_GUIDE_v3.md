@@ -1,5 +1,9 @@
 # SignMate developer guide (v3: desktop app, local server, data and training)
 
+> **PSL version (master v3), kept for history.** SignMate is now ASL only and a website only (master v4, CLAUDE.md
+> section 10). This guide is rewritten for ASL in master-v4 Stage 7; until then, do not follow its PSL, offline-copy
+> or app steps.
+
 > Moved from the top-level README on 2026-11-26 when the product README replaced it. Parts that describe the
 > website UI (Translate screen, Gesture demo, Exhibition view) are out of date: see ../README.md. The desktop app,
 > local server, data collection, training and test instructions below still apply.

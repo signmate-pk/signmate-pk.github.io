@@ -1,87 +1,86 @@
-# How to measure ASL mode's accuracy on Kaggle [ME]
+# How to measure the ASL model on Kaggle [ME]
 
-This runs `notebooks/asl_mode_eval.ipynb` on Kaggle's free computers. It **trains nothing**: it runs
-the ready-made ASL model on the competition's hidden test signers and writes down how often it is
-right. You click a few buttons, wait, and send me one file.
+This runs `notebooks/asl_mode_eval.ipynb` on Kaggle's free computers. It **trains nothing**: it runs SignMate's
+ready-made ASL model on the competition's hidden test signers (the GISLR rerun set, 39,443 signs) and writes down
+how often it is right. You click a few buttons, wait, and send me two files.
 
-- **Time:** about 10 minutes of clicking, then 30-90 minutes of waiting (you can close the browser).
+The master-v4 version (2026-11-27) measures more than the 2026-11-20 run:
+- every sign's result and the full confusion matrix (which sign gets taken for which), for the project page;
+- the website's 32-frame path on **every** sign, not every 5th;
+- **test-time mirroring**: each sign is also read as its left/right mirror image and the two answers are averaged.
+  This should narrow the 4.5-point gap between left- and right-handed signers; the run measures whether it does;
+- calibration error (how well "90 % sure" matches being right 90 % of the time);
+- six clear recordings for the website's guided tour, re-checked against the model.
+
+- **Time:** about 10 minutes of clicking, then 45-120 minutes of waiting (you can close the browser).
 - **Cost:** free.
-- **You need:** a Kaggle account with a verified phone number (Kaggle asks for this before a notebook
-  may use the internet).
 
 ---
 
-## Step 1. Make a Kaggle account (skip if you have one)
+## Step 1. Download the notebook
 
-1. Go to <https://www.kaggle.com> and click **Register**. Sign up with Google or an email address.
-2. Click your profile picture (top right), then **Settings**.
-3. Find **Phone verification**, enter your phone number and type in the code Kaggle texts you.
+1. Open <https://github.com/signmate-pk/signmate-pk.github.io/blob/v4/asl/notebooks/asl_mode_eval.ipynb>.
+2. Click the **Download raw file** button (a down-arrow, top right of the file view). It saves
+   `asl_mode_eval.ipynb` in your Downloads folder.
 
-## Step 2. Open the notebook on Kaggle
+## Step 2. Open it on Kaggle
 
-1. Download the notebook file: open
-   <https://github.com/shaafrajput06-tech/SignBridge/blob/v3/master/notebooks/asl_mode_eval.ipynb>
-   and click the **Download raw file** button (a down-arrow, top right of the file). It saves
-   `asl_mode_eval.ipynb` in your Downloads folder. (After the move in `docs/DOMAIN.md` the old link
-   still works; GitHub forwards it.)
-2. On Kaggle, click **+ Create** (top left), then **New Notebook**.
-3. In the notebook, click **File > Import Notebook**, click **Browse Files**, choose
-   **`asl_mode_eval.ipynb`** from Downloads and click **Import**. You should see cells that start with
-   "SignBridge ASL mode: accuracy on signers the model never saw".
+1. On <https://www.kaggle.com>, click **+ Create** (top left), then **New Notebook**.
+2. Click **File > Import Notebook**, then **Browse Files**, choose **`asl_mode_eval.ipynb`** and click **Import**.
+   The first cell should start with "SignMate (ASL): accuracy on signers the model never saw".
 
 ## Step 3. Add the test data
 
 1. In the right-hand panel, find **Input** and click **+ Add Input**.
-2. In the search box type **ASL Isolated Sign Recognition Rerun Set**.
-3. Click the result by *sohier* (about 14 GB, licence CC0) and click the **+** button next to it.
-   It appears under Input after a few seconds.
-4. Optional but useful: search **Google - Isolated Sign Language Recognition**, open it, accept the
-   competition rules if Kaggle asks, and add it as well. The notebook then checks that none of the
-   test signers were used to train the model.
+2. Search **ASL Isolated Sign Recognition Rerun Set**.
+3. Click the result by *sohier* (about 14 GB, licence CC0) and click the **+** next to it.
 
-## Step 4. Let the notebook download the model
+## Step 4. Add the model
 
-1. In the right-hand panel, open **Settings** (it may be under a "⋮" or "Session options" menu).
-2. Switch **Internet** to **On**.
+Your Kaggle account cannot download from the internet inside a notebook, so the model goes in as a file.
 
-No internet option? Then add the model as a file instead: after `setup_windows.bat` (or
-`start_signbridge.bat`) has run once, your SignBridge folder has `models\asl\model.tflite`. In
-**+ Add Input** choose **Upload**, then **New Dataset**, drop in `model.tflite` and
-`sign_to_prediction_index_map.json` from `Documents\SignBridge\models\asl`, name it `signbridge-asl-model`, keep it private and
-click **Create**. The notebook finds it and checks it is the same file (by its SHA-256).
+- **If you uploaded it for the 2026-11-20 run:** in **+ Add Input**, open **Your Work** (or **Datasets → Your
+  Datasets**), find **signbridge-asl-model** and click **+**.
+- **Otherwise:** in **+ Add Input** choose **Upload → New Dataset**. Drag in these two files from your computer:
+  - `D:\sigmbridge\SignMate\models\asl\model.tflite` (about 11 MB)
+  - `D:\sigmbridge\SignMate\models\asl\sign_to_prediction_index_map.json`
+
+  Name it `signmate-asl-model`, keep it **Private** and click **Create**.
+
+The notebook checks the model by its SHA-256, so it refuses a different file.
 
 ## Step 5. Run it in the background
 
 1. Click **Save Version** (top right).
 2. Choose **Save & Run All (Commit)** and click **Save**.
-3. Kaggle now runs every cell on its own computer. You can close the tab. It sends you a
-   notification when the run finishes, usually in 30-90 minutes.
+3. You can close the tab. Kaggle tells you when it has finished.
 
-(You can press **Run All** instead to watch it, but then the run stops if the tab sits idle too long.)
+## Step 6. Send me the two files
 
-## Step 6. Download the result and send it to me
-
-1. Open the notebook again (Kaggle: **Code > Your Work**) and click the finished version.
-2. Open the **Output** tab and download **`asl_eval_results.json`**.
-3. Attach that file in this chat. It holds only numbers: accuracy, timings and settings. It holds no
-   video and no personal data.
+1. Open the notebook again (**Code → Your Work**) and click the finished version.
+2. Open the **Output** tab and download both files:
+   - **`asl_eval_results.json`** (a few hundred KB to about 2 MB: numbers only)
+   - **`asl_tour_recordings.json`** (about 0.5-1 MB: hand, face and arm points of six signs from the CC0 dataset)
+3. Attach both files in this chat. Neither holds video or anything about you.
 
 ## What the notebook prints (so you know it is working)
 
 | Cell | You should see |
 |---|---|
-| Model | `Using the attached model.tflite ...` or `Downloading model.tflite ...`, then `Model ready: ...  input [-1 543 3]` |
-| Data | `Samples: ... signs: 250 signers: ...` |
+| Model | `Using the attached model.tflite ...`, then `Model ready: ... input [-1 543 3]` |
+| Data | `Samples: 39443 | signs: 250 | signers: not given` |
 | Layout | `Row order checked on 5 files: face, left_hand, pose, right_hand` |
-| Run | a line every 1,000 samples, such as `3000/... samples, 412 s, top-1 so far 0.8...` |
-| Results | a block of numbers, then `Saved /kaggle/working/asl_eval_results.json` |
+| Run | a line every 1,000 samples, such as `3000/39443 samples, 520 s, top-1 so far 0.86...` |
+| Results | a block of numbers with `"paths"` (native, native_tta, fixed_32, fixed_32_tta ...), then `Saved /kaggle/working/asl_eval_results.json` |
+| Guided-tour recordings | six lines such as `hello: 31 frames, right-dominant, rows 151, change from storage 1.2e-06, website path says ['hello', 0.99]`, then `Saved ... asl_tour_recordings.json with 6 recordings` |
 
 ## If something goes wrong
 
 | Message | What to do |
 |---|---|
-| `No CSV with 'path' and 'sign' columns was found` | The rerun dataset is not attached: do Step 3 again. |
-| `needs Internet switched on` or a download error | Do Step 4: switch Internet on, or upload the model as a dataset. |
-| `is not the pinned file` | The model is a different file. Use the files from your SignBridge folder or the Hugging Face link. Do not change the hash in the notebook. |
-| The run takes too long | In the first code cell change `MAX_SAMPLES = None` to `MAX_SAMPLES = 5000`, then save a new version. The report will say it used a subset. |
+| `No label table ... was found` | The rerun dataset is not attached: do Step 3 again. |
+| `needs Internet switched on` or a download error | The model is not attached: do Step 4. |
+| `is not the pinned file` | The uploaded model is a different file. Use the two files from `D:\sigmbridge\SignMate\models\asl`. |
+| The run stops after 12 hours | In the first code cell change `MAX_SAMPLES = None` to `MAX_SAMPLES = 10000`, then save a new version. The report will say it used a subset. |
+| Fewer than six tour recordings | Fine: the notebook only keeps signs it reads right with at least 90 % on both paths. |
 | Anything else | Send me a screenshot of the red error text. |

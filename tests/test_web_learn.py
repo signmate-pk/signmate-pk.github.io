@@ -35,6 +35,10 @@ def candidate(**overrides) -> Candidate:
     return Candidate(**base)
 
 
+
+PSL_RETIRED = ("PSL is retired (master v4, CLAUDE.md 10.1): the PSL vocabulary and PSL dictionary sources this test used are gone. "
+               "tools/web_learn is rebuilt for ASL in master-v4 Stage 1.")
+
 class LicenceTests(unittest.TestCase):
     def test_normalising_platform_licence_text(self):
         cases = {"CC BY-SA 4.0": "CC-BY-SA-4.0", "https://creativecommons.org/licenses/by/4.0/": "CC-BY-4.0",
@@ -61,6 +65,7 @@ class LicenceTests(unittest.TestCase):
         self.assertFalse(candidate(source="youtube", media_url="https://x", licence_id="CC-BY-4.0").download_allowed)
 
 
+@unittest.skip(PSL_RETIRED)
 class WordAndQueryTests(unittest.TestCase):
     def test_vocabulary_words_have_three_scripts(self):
         vocab = words.vocabulary_words()
@@ -94,6 +99,7 @@ class FakeWeb:
         return json.dumps({}).encode()
 
 
+@unittest.skip(PSL_RETIRED)
 class SourceTests(unittest.TestCase):
     def setUp(self):
         self.hello = next(w for w in words.vocabulary_words() if w.english.lower() == "hello")
@@ -187,9 +193,10 @@ class LedgerGateTests(unittest.TestCase):
         self.assertIsNone(web_ledger.fetch_refusal(clip, self.with_entries(clip)))
         self.assertIn("platform terms", web_ledger.fetch_refusal(candidate(source="youtube", media_url=None), self.ledger))
 
-    def test_dictionary_clips_are_covered_by_the_dataset_entry(self):
+    def test_retired_psl_dictionary_clips_are_refused(self):
+        # Before master v4 the PSL dictionary's entry covered these clips; it is retired now, so nothing is fetched.
         clip = candidate(source="slt", ledger_id="psl-slt-dictionary")
-        self.assertIsNone(web_ledger.fetch_refusal(clip, self.ledger))
+        self.assertIn("retired", web_ledger.fetch_refusal(clip, self.ledger))
         self.assertEqual(web_ledger.entries_to_add([clip], self.ledger), [])
 
     def test_manifest_check_catches_labels_the_ledger_does_not_allow(self):
@@ -248,6 +255,7 @@ class QualityAndMatchTests(unittest.TestCase):
                          {"p": "single_source", "q": "single_source"})
 
 
+@unittest.skip(PSL_RETIRED)
 class PipelineTests(unittest.TestCase):
     """search output -> fetch with a fake downloader and extractor -> manifest + report, in a temp folder."""
 

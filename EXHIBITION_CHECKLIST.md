@@ -1,5 +1,9 @@
 # Live demo checklist (exhibitions, school visits, partner meetings)
 
+> **PSL version (master v3), kept for history.** SignMate is now ASL only and a website only (master v4, CLAUDE.md
+> section 10). This guide is rewritten for ASL in master-v4 Stage 7; until then, do not follow its PSL, offline-copy
+> or app steps.
+
 Applies to any public demo of SignMate. The demo runs the live website, saved for offline use, with the
 offline copy on a USB stick as a backup. The 30-second script is in README.md ("Presenting SignMate").
 

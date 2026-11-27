@@ -18,27 +18,36 @@ CORE = ROOT / "tools" / "asl_eval_core.py"
 SPEC = ROOT / "shared_data" / "asl_islr_spec.json"
 OUT = ROOT / "notebooks" / "asl_mode_eval.ipynb"
 
-INTRO = """# SignBridge ASL mode: accuracy on signers the model never saw
+INTRO = """# SignMate (ASL): accuracy on signers the model never saw
 
-This notebook measures the ASL model that SignBridge's ASL mode uses (the 1st-place model of Google's
-Isolated Sign Language Recognition competition, MIT licence) on the competition's **rerun set**: the
-hidden test data, released under CC0, whose signers are reported not to be in the training data.
+This notebook measures SignMate's ASL model (the 1st-place model of Google's Isolated Sign Language
+Recognition competition, MIT licence) on the competition's **rerun set**: the hidden test data, released
+under CC0, whose signers are reported not to be in the training data.
+
+It measures four ways of running the model: the sign's real length ("native", as the model was built), the
+website's 32 frames, and each of those averaged with the sign's left/right mirror image ("test-time
+mirroring", with the flip the model was trained with). For each: accuracy, one- and two-handed, left- and
+right-dominant, calibration, every sign's result and the full confusion matrix. It also picks a few clear
+signs for the website's guided tour.
 
 **How to run:** follow `docs/HOW_TO_RUN_ASL_EVAL.md`. In short: add the dataset *ASL Isolated Sign
-Recognition Rerun Set* as input, switch Internet on (or add your copy of `model.tflite`), then
-**Run all**. It takes roughly 30-90 minutes on Kaggle's free CPU.
+Recognition Rerun Set* and your copy of the model as inputs, then **Save & Run All**. It takes roughly
+45-120 minutes on Kaggle's free CPU.
 
-**What to send back:** the file `asl_eval_results.json` from the Output panel (or copy the block printed
-by the last cell).
+**What to send back:** the two files `asl_eval_results.json` and `asl_tour_recordings.json` from the Output
+panel. (The printed summary leaves out the per-sign results and the confusion matrix, so the files are needed.)
 
 Nothing here trains anything. Every number it prints is measured, with the dataset and the date."""
 
 SETTINGS = """# Settings. You do not need to change these.
-FIXED_LENGTHS = [16, 24, 32, 48, 64]   # frame counts the browser could use; compared with the native length
-FIXED_EVERY = 5                       # test the fixed lengths on every 5th sample (they take 5x the time)
+FIXED_LENGTHS = [32]                  # the website's frame count (chosen from the 2026-11-20 run)
+FIXED_EVERY = 1                       # every sample (the website's path is the number that matters)
+MIRROR = True                         # also average each answer with the sign's mirror image
 MAX_SAMPLES = None                    # None = all samples; a number = a quicker, shorter run
+TOUR_COUNT = 6                        # recordings for the website's guided tour
 INPUT_ROOT = "/kaggle/input"
 OUTPUT_FILE = "/kaggle/working/asl_eval_results.json"
+TOUR_FILE = "/kaggle/working/asl_tour_recordings.json"
 MODEL = {MODEL}
 CLASSES = {CLASSES}
 """
@@ -135,7 +144,7 @@ for relative in table[columns["path"]].head(5):
 print(f"Row order checked on {layout_checked} files: face, left_hand, pose, right_hand")
 """
 
-RUN = """records, facts, errors = [], [], []
+RUN = """records, facts, errors, tour_candidates = [], [], [], []
 started = time.time()
 for i, row in table.iterrows():
     path = resolve(row[columns["path"]])
@@ -147,10 +156,12 @@ for i, row in table.iterrows():
         if len(sequence) == 0:
             errors.append(f"empty {row[columns['path']]}")
             continue
-        record = evaluate_sample(sequence, labels.index(row[columns["sign"]]), predict, FIXED_LENGTHS if i % FIXED_EVERY == 0 else ())
+        record = evaluate_sample(sequence, labels.index(row[columns["sign"]]), predict, FIXED_LENGTHS if i % FIXED_EVERY == 0 else (), mirror=MIRROR)
         record["participant"] = None if not columns["participant"] else str(row[columns["participant"]])
         records.append(record)
         facts.append(convention_facts(sequence))
+        if tour_candidate(record, labels):
+            tour_candidates.append({**record, "source": path, "sequence_id": None if not columns["sequence"] else str(row[columns["sequence"]])})
     except Exception as error:
         errors.append(f"{row[columns['path']]}: {error}")
     if (i + 1) % 1000 == 0:
@@ -173,12 +184,47 @@ results = {
     "conventions": convention_summary(facts, records),
     "summary": summary,
 }
-json.dump(results, open(OUTPUT_FILE, "w"), indent=1)
+with open(OUTPUT_FILE, "w") as handle:
+    json.dump(results, handle)
 short = {key: results[key] for key in ("measured_on", "model", "conventions")}
 short["dataset"] = {k: v for k, v in results["dataset"].items() if k != "signers"}
-short["summary"] = {k: v for k, v in summary.items() if k not in ("per_sign",)}
+short["summary"] = {k: v for k, v in summary.items() if k not in ("per_sign", "paths")}
+short["summary"]["paths"] = {name: {k: v for k, v in path.items() if k not in ("per_sign", "confusion")} for name, path in summary["paths"].items()}
 print(json.dumps(short, indent=1))
-print(f"\\nSaved {OUTPUT_FILE}. Download it from the Output panel and attach it in the SignBridge chat.")
+print(f"\\nSaved {OUTPUT_FILE} ({os.path.getsize(OUTPUT_FILE) // 1024} KB). Download it from the Output panel.")
+"""
+
+TOUR = """# The guided tour's recordings: re-checked against the model after compact storage.
+tour = []
+for candidate in pick_tour(tour_candidates, labels, TOUR_COUNT):
+    original = load_sequence(candidate["source"])
+    full = softmax_if_needed(predict(original))
+    rows = TOUR_ROWS
+    data, clipped = encode_rows(original, rows)
+    stored = decode_rows(data, len(original), rows)
+    difference = max(abs(a - b) for a, b in zip(full, softmax_if_needed(predict(stored))))
+    if difference > 1e-3:  # the model read a row that was left out: keep every row instead
+        rows = list(range(ROWS_PER_FRAME))
+        data, clipped = encode_rows(original, rows)
+        stored = decode_rows(data, len(original), rows)
+        difference = max(abs(a - b) for a, b in zip(full, softmax_if_needed(predict(stored))))
+    expected = {}
+    for name, sequence in (("native", stored), ("fixed_32", stored[resample_indices(len(stored), 32)])):
+        p = softmax_if_needed(predict(sequence))
+        expected[name] = [[labels[i], round(float(p[i]), 6)] for i in top5(p)]
+    tour.append({"sign": labels[candidate["sign"]], "sequence_id": candidate["sequence_id"], "frames": int(len(original)),
+                 "dominant": candidate["dominant"], "two_handed": candidate["two_handed"], "rows": rows,
+                 "all_rows": len(rows) == ROWS_PER_FRAME, "clipped_values": clipped, "data": data,
+                 "max_probability_change_from_storage": float(difference), "expected": expected})
+    print(f"{labels[candidate['sign']]:>10}: {len(original)} frames, {candidate['dominant']}-dominant, "
+          f"rows {len(rows)}, change from storage {difference:.2e}, website path says {expected['fixed_32'][0]}")
+tour_file = {"source": "ASL Isolated Sign Recognition Rerun Set (Kaggle, sohier/461054610546105), CC0-1.0",
+             "ledger_id": "asl-gislr-rerun-set", "measured_on": results["measured_on"], "model_sha256": MODEL["sha256"],
+             "runtime": runtime, "quant": TOUR_QUANT, "nan_code": TOUR_NAN, "rows_per_frame": ROWS_PER_FRAME,
+             "candidates_found": len(tour_candidates), "recordings": tour}
+with open(TOUR_FILE, "w") as handle:
+    json.dump(tour_file, handle)
+print(f"\\nSaved {TOUR_FILE} with {len(tour)} recordings ({os.path.getsize(TOUR_FILE) // 1024} KB). Download it from the Output panel.")
 """
 
 
@@ -197,7 +243,8 @@ def build() -> dict:
     settings = SETTINGS.replace("{MODEL}", json.dumps(model)).replace("{CLASSES}", json.dumps(classes))
     cells = [markdown(INTRO), code(settings), markdown("## The evaluation code (a copy of tools/asl_eval_core.py)"),
              code(CORE.read_text(encoding="utf-8")), markdown("## Model"), code(LOAD_MODEL), markdown("## Data"),
-             code(FIND_DATA), code(LAYOUT), markdown("## Run"), code(RUN), markdown("## Results"), code(SUMMARY)]
+             code(FIND_DATA), code(LAYOUT), markdown("## Run"), code(RUN), markdown("## Results"), code(SUMMARY),
+             markdown("## Guided-tour recordings"), code(TOUR)]
     return {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
                                          "language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 5}
 

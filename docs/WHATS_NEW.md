@@ -1,37 +1,15 @@
-# What's new in SignMate 3.0
+# What's new in SignMate
 
-The website's "What's new" page and the GitHub Release notes are made from this file (tools/site_pages.py).
+The website's "What's new" page is made from this file (tools/site_pages.py).
 
-## New name and address
-- SignBridge is now called **SignMate**, at https://signmate-pk.github.io/ (the old address was switched off; this is the only website).
+## SignMate is now American Sign Language (ASL)
+- SignMate now reads American Sign Language and shows and speaks the words in English. It knows 250 everyday ASL signs.
+- Why the change: for ASL, large collections of signs recorded with the consent of Deaf signers exist under licences that allow this use. The Pakistan Sign Language version is archived in the repository.
+- Every answer is still a suggestion you confirm. Nothing is spoken until you tap "Yes". Each sign says "Dataset sign — not yet validated by our reviewers" until a Deaf ASL reviewer checks it.
 
-## PSL from the camera
-- The camera now suggests Pakistan Sign Language words. It learned them from a public PSL dataset of hand movements (SignSpeak).
-- Every PSL answer is a suggestion (Tier B) that you confirm. Nothing is spoken until you tap "Yes".
-- These signs are marked "Community dataset — not yet validated" until Deaf signers check them.
-- Your confirmations tune the suggestions to your own signing. This is kept only in your browser, and "Forget them" removes it.
-- A five-second camera check tells you if the light, distance or framing will cause problems.
+## A website, nothing to install
+- SignMate is a website only: the translator is at signmate-pk.github.io/translate/. There is no app to install and no offline copy.
+- The camera picture still never leaves your device: recognition runs in your browser.
 
-## Talking both ways
-- Confirmed signs build a sentence in English or Urdu, with the signs you made shown underneath.
-- The hearing person can type a reply. It is shown in large text, and the words SignMate knows play as PSL dictionary videos, word by word.
-- Quick phrases and emergency phrases speak with one tap.
-
-## Seeing how signs are made
-- The dictionary videos are back for 31 vocabulary words.
-- A new Dictionary page lists every sign of a community PSL dictionary, each with its video.
-
-## ASL mode
-- ASL mode runs in the background again. On the old site its model could not load in a Web Worker and ran on the main page instead.
-- It speaks a word only when it is at least 70 % sure.
-
-## Faster, offline and clearer
-- The first visit loads less: the camera software and ASL mode load only when you use them.
-- "Save for offline use" stores the whole site on your device, so it works with no internet.
-- Text is larger and easier to read everywhere.
-- New pages: "How well it works" (every measured number, with where and how it was measured), "Credits and licences" and this page.
-
-## Still limited
-- No sign is Tier A ("Recognised") yet. That needs a test on people the model has never seen, and a Deaf validator's sign-off.
-- Finger-spelling is not included yet. The Urdu alphabet data (UAlpha40, CC BY 4.0) is licensed and its converter is written, but the letter model is not trained and tested yet.
-- The PSL camera knows single words signed one at a time, with a pause between them, not full sentences signed without pauses.
+## For now in English only
+- Urdu captions come back once an Urdu editor has reviewed them.

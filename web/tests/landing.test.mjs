@@ -1,5 +1,5 @@
 // The project page (web/index.html) is complete without JavaScript, honest, and built from the real data:
-// every sign comes from the model's labels file and every number from shared_data/psl_results.json.
+// every sign comes from the ASL model's labels file and every number from shared_data/asl_results.json.
 // No browser needed: the page is rendered with the same generator the build uses (scripts/landing-content.mjs).
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -12,11 +12,13 @@ import { cameraProblem } from "../src/landing/camera.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const web = path.resolve(here, "..");
 const project = path.resolve(web, "..");
-const manifest = JSON.parse(readFileSync(path.join(project, "models/psl/manifest.json"), "utf8"));
-const results = JSON.parse(readFileSync(path.join(project, "shared_data/psl_results.json"), "utf8"));
-const input = loadInputs({ project, publicDir: path.join(web, "public") });
+const indexMap = JSON.parse(readFileSync(path.join(project, "models/asl/sign_to_prediction_index_map.json"), "utf8"));
+const aslSpec = JSON.parse(readFileSync(path.join(project, "shared_data/asl_islr_spec.json"), "utf8"));
+const results = JSON.parse(readFileSync(path.join(project, "shared_data/asl_results.json"), "utf8"));
+const input = loadInputs({ project });
 const html = renderLanding(readFileSync(path.join(web, "index.html"), "utf8"), input);
-const app = readFileSync(path.join(web, "app.html"), "utf8");
+const app = readFileSync(path.join(web, "translate", "index.html"), "utf8");
+const forward = readFileSync(path.join(web, "public", "app.html"), "utf8");
 const visible = html.replace(/<!--[\s\S]*?-->/g, "");
 const all = (re) => [...visible.matchAll(re)];
 
@@ -43,40 +45,42 @@ test("every section the judges asked for is in the HTML itself, with the menu po
   assert.doesNotMatch(visible, /SignMate needs JavaScript/);
 });
 
-test("the sign library is exactly the model's signs, never invented ones", () => {
-  const signs = manifest.classes.filter((c) => c.tier && c.gloss !== manifest.unknown_class);
+test("the sign library is exactly the model's 250 signs, never invented ones", () => {
+  const labels = Object.keys(indexMap);
   const cards = all(/<li class="sign" /g);
-  assert.equal(cards.length, signs.length);
-  for (const sign of signs) assert.ok(visible.includes(`<h3 class="sign-en">${sign.english.replace(/&/g, "&amp;").replace(/'/g, "'")}</h3>`), sign.english);
-  assert.deepEqual(librarySigns(input).map((s) => s.gloss).sort(), signs.map((s) => s.gloss).sort());
-  assert.ok(!visible.includes('class="sign-en">Not a sign<'), "'Not a sign' is not offered as a sign");
+  assert.equal(cards.length, labels.length);
+  assert.equal(labels.length, 250);
+  for (const label of labels) {
+    const english = (aslSpec.display_names[label] ?? label).replace(/&/g, "&amp;");
+    assert.ok(visible.includes(`<h3 class="sign-en">${english}</h3>`), english);
+    assert.ok(visible.includes(`Gloss: </span>${label.toUpperCase()}</p>`), label);
+  }
+  assert.deepEqual(librarySigns(input).map((s) => s.gloss).sort(), [...labels].sort());
+  assert.equal(all(/Dataset sign — not yet validated by our reviewers/g).length, labels.length);
 });
 
 test("the results shown are the measured ones, with their labels", () => {
   const pct = (x) => `${(x * 100).toFixed(1)} %`;
-  assert.ok(visible.includes(pct(results.fair_test.top1)));
-  assert.ok(visible.includes(pct(results.independent_signer.top1)));
-  assert.match(visible, /Weaker test/);
-  assert.match(visible, /not yet validated by Deaf signers/);
-  assert.ok(visible.includes(`training run ${results.source.run}`));
-  // The confusion matrix has one green square per tested sign that was ever right, and one diamond per error kind.
-  const errorKinds = results.confusion_matrix.errors.length;
-  assert.equal(all(/<path d="M[^"]+Z" fill="#ffb547"/g).length, errorKinds);
-  assert.equal(all(/<rect [^>]*fill="#3ddc97" fill-opacity/g).length, results.confusion_matrix.counts.filter((row, i) => row[i] > 0).length);
+  assert.ok(visible.includes(pct(results.headline.native_top1)));
+  assert.ok(visible.includes(pct(results.headline.native_top5)));
+  assert.ok(visible.includes(pct(results.headline.browser_top1)));
+  assert.ok(visible.includes(results.measured_on.slice(0, 10)));
+  assert.ok(visible.includes(results.source), "names its source file");
+  assert.match(visible, /not yet validated by our Deaf reviewers/);
+  assert.match(visible, /could not re-check/);
+  if (results.status !== "complete") assert.match(visible, /Per-sign results and the confusion matrix come with the next measurement run/);
 });
 
-test("accessibility basics: alt text, captions in English and Urdu, Urdu marked right to left", () => {
+test("website only, ASL only: no app, offline copy, install or PSL feature on the page", () => {
+  assert.doesNotMatch(visible, /manifest\.webmanifest|Save for offline|[Ww]orks offline|offline copy|Install/);
+  assert.doesNotMatch(visible, /PSL dictionary|psl_|Roman Urdu|class="clip-link"|<video\b/);
+  assert.doesNotMatch(app, /manifest\.webmanifest/);
+  assert.match(app, /<meta name="signmate-base" content="\.\.\/" \/>/);
+});
+
+test("accessibility basics: alt text, labelled inputs, unique ids, English", () => {
   for (const [img] of all(/<img\b[^>]*>/g)) assert.match(img, /\balt="/, img);
-  const videos = all(/<video\b[\s\S]*?<\/video>/g);
-  assert.ok(videos.length >= 1);
-  for (const [video] of videos) {
-    assert.match(video, /<track kind="captions" srclang="en"/);
-    assert.match(video, /<track kind="captions" srclang="ur"/);
-  }
-  for (const [tag] of all(/<[a-z0-9]+\b[^>]*\blang="ur"[^>]*>/g)) {
-    if (/^<(track|meta)/.test(tag)) continue;
-    assert.match(tag, /dir="rtl"/, tag);
-  }
+  for (const [video] of all(/<video\b[\s\S]*?<\/video>/g)) assert.match(video, /<track kind="captions" srclang="en"/);
   assert.match(visible, /<html lang="en"/);
   for (const [input] of all(/<input\b[^>]*>/g)) {
     const id = input.match(/id="([^"]+)"/)?.[1];
@@ -101,12 +105,14 @@ test("missing facts are visible placeholders, not made up", () => {
   assert.doesNotMatch(visible, /lorem ipsum|testimonial|award-winning/i);
 });
 
-test("the app keeps working at app.html, with a real no-JavaScript fallback, and old links forward there", () => {
+test("the translator is at translate/, with a real no-JavaScript fallback, and old links forward there", () => {
   assert.match(app, /<script type="module" src="\/src\/main.jsx"><\/script>/);
   assert.match(app, /<noscript>[\s\S]*turn JavaScript on[\s\S]*project page[\s\S]*<\/noscript>/i);
-  assert.match(html, /location\.replace\("app\.html" \+ s \+ h\)/);
-  assert.match(visible, /href="app\.html#\/words"/);
-  assert.match(visible, /href="app\.html#\/tour"/);
+  assert.match(html, /location\.replace\("translate\/" \+ s \+ h\)/);
+  assert.match(visible, /href="translate\/#\/words"/);
+  assert.match(visible, /href="translate\/#\/tour"/);
+  assert.match(forward, /location\.replace\("translate\/" \+ location\.search \+ location\.hash\)/);
+  assert.match(forward, /http-equiv="refresh" content="0; url=translate\/"/);
 });
 
 test("the demo checks the camera before loading anything", async () => {

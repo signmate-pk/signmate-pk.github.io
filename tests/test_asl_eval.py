@@ -88,6 +88,109 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(record["fixed"]["16"][0], 9)
         self.assertEqual(record["fixed"]["32"][0], 7)
 
+    def test_flip_matches_the_original_step_by_step_and_is_its_own_inverse(self):
+        rng = np.random.default_rng(1)
+        seq = rng.random((5, 543, 3)).astype(np.float32)
+        seq[2, 468:489] = np.nan  # a missing hand stays missing on the other side
+        # The 1st-place notebook's flip_lr, step by step: x -> 1 - x, then each pair of row lists swaps values.
+        expected = seq.copy()
+        expected[..., 0] = 1 - expected[..., 0]
+        for left, right in core.FLIP_SWAPS:
+            a, b = expected[:, left].copy(), expected[:, right].copy()
+            expected[:, left], expected[:, right] = b, a
+        flipped = core.flip_lr(seq)
+        np.testing.assert_array_equal(flipped, expected)
+        np.testing.assert_allclose(core.flip_lr(flipped), seq, atol=1e-6)
+        self.assertTrue(np.isnan(flipped[2, 522:543]).all())
+        perm = core.flip_permutation()
+        self.assertEqual(sorted(perm), list(range(543)))
+        for midline in (0, 1, 2, 13, 14, 17):  # lip and nose points on the face's midline stay in place
+            self.assertEqual(perm[midline], midline)
+        self.assertEqual(len(core.LLIP), len(core.RLIP))
+        self.assertEqual(len(core.LEYE), len(core.REYE))
+        self.assertEqual(len(core.MODEL_ROWS), 40 + 42 + 4 + 32)
+
+    def test_evaluate_sample_with_mirroring(self):
+        calls = []
+
+        def predict(seq):
+            seq = np.asarray(seq)
+            calls.append(len(seq))
+            scores = [0.0] * 250
+            # Answers depend on where the right-hand slot is, so the mirror image gives another answer.
+            scores[3 if np.isnan(seq[0, 522, 0]) else 7] = 3.0
+            return scores
+
+        seq = np.stack([frame(right=True)] * 20)
+        record = core.evaluate_sample(seq, 7, predict, (32,), mirror=True)
+        self.assertEqual(calls, [20, 20, 32, 32])
+        paths = record["paths"]
+        self.assertEqual(set(paths), {"native", "native_mirrored", "native_tta", "fixed_32", "fixed_32_tta"})
+        self.assertEqual(paths["native"]["top5"][0], 7)
+        self.assertEqual(paths["native_mirrored"]["top5"][0], 3)
+        self.assertEqual(paths["native_tta"]["top5"][:2], [3, 7])  # a tie: the lower index first, as in top5
+        # Averaged at the winner (index 3): its small native probability and its large mirrored one.
+        self.assertAlmostEqual(paths["native_tta"]["p"], ((1 - paths["native"]["p"]) / 249 + paths["native_mirrored"]["p"]) / 2)
+        self.assertEqual(record["fixed"]["32"][0], 7)
+        self.assertEqual(paths["fixed_32_tta"]["top5"][:2], [3, 7])
+
+    def test_path_summary_confusion_and_calibration(self):
+        def rec(sign, answer, p, dom="right", two=False):
+            return {"sign": sign, "native_top5": [answer], "native_p": p, "native_ms": 1.0, "fixed": {}, "two_handed": two, "dominant": dom,
+                    "paths": {"native": {"top5": [answer, 9, 8, 7, 6], "p": p}}}
+
+        records = [rec(1, 1, 0.95), rec(1, 2, 0.6), rec(1, 2, 0.55, dom="left"), rec(2, 2, 0.9, dom="left"), rec(3, 1, 0.3, two=True)]
+        labels = [f"s{i}" for i in range(250)]
+        out = core.summarise(records, labels)["paths"]["native"]
+        self.assertEqual(out["samples"], 5)
+        self.assertAlmostEqual(out["top1"], 2 / 5)
+        self.assertEqual(out["confusion"], [[1, 1, 1], [1, 2, 2], [2, 2, 1], [3, 1, 1]])
+        self.assertEqual(sum(n for _t, _a, n in out["confusion"]), out["samples"])
+        self.assertEqual(out["per_sign"]["s1"], {"samples": 3, "top1": 1 / 3, "top5": 1 / 3, "confused_with": [["s2", 2]]})
+        self.assertEqual(out["groups"]["dominant_left"]["top1"], 0.5)
+        self.assertAlmostEqual(out["left_right_gap"], 0.5 - 1 / 3)
+        by_t = {c["threshold"]: c for c in out["calibration"]}
+        self.assertEqual(by_t[0.9]["coverage"], 0.4)
+        self.assertEqual(by_t[0.9]["wrong_when_covered"], 0.0)
+        self.assertIsNone(core.expected_calibration_error([]))
+        self.assertAlmostEqual(core.expected_calibration_error([(0.95, True), (0.95, False)], bins=10), 0.45)
+        self.assertAlmostEqual(core.expected_calibration_error([(1.0, True)], bins=10), 0.0)
+
+    def test_tour_storage_round_trip_and_choice(self):
+        rng = np.random.default_rng(2)
+        seq = rng.random((7, 543, 3)).astype(np.float32) - 0.25
+        seq[3, 468:489] = np.nan
+        data, clipped = core.encode_rows(seq, core.TOUR_ROWS)
+        self.assertEqual(clipped, 0)
+        back = core.decode_rows(data, 7, core.TOUR_ROWS)
+        rows = core.TOUR_ROWS
+        np.testing.assert_allclose(back[:, rows], seq[:, rows], atol=0.5 / core.TOUR_QUANT + 1e-7)
+        self.assertTrue(np.isnan(back[3, 468:489]).all())
+        others = sorted(set(range(543)) - set(rows))
+        self.assertTrue(np.isnan(back[:, others]).all())
+        self.assertIn(1, rows)  # the nose
+        self.assertIn(489 + 16, rows)  # the right wrist of the pose, for drawing arms
+        big = np.full((1, 543, 3), 5.0, dtype=np.float32)
+        self.assertEqual(core.encode_rows(big, [0])[1], 3)
+
+        labels = ["hello", "yes", "cat"] + [f"s{i}" for i in range(247)]
+
+        def rec(sign, p, frames=30, dom="right", right=True):
+            answer = sign if right else 2
+            return {"sign": sign, "frames": frames, "dominant": dom, "two_handed": False,
+                    "paths": {"native": {"top5": [answer], "p": p}, "fixed_32": {"top5": [answer], "p": p}}}
+
+        self.assertTrue(core.tour_candidate(rec(0, 0.95), labels))
+        self.assertFalse(core.tour_candidate(rec(0, 0.85), labels))
+        self.assertFalse(core.tour_candidate(rec(0, 0.95, right=False), labels))
+        self.assertFalse(core.tour_candidate(rec(0, 0.95, frames=200), labels))
+        self.assertFalse(core.tour_candidate(rec(2, 0.99), labels))  # "cat" is not a tour sign
+        self.assertFalse(core.tour_candidate(rec(0, 0.99, dom=None), labels))  # no hand seen
+        picks = core.pick_tour([rec(1, 0.99), rec(0, 0.95), rec(0, 0.97), rec(1, 0.92, dom="left")], labels)
+        self.assertEqual([labels[r["sign"]] for r in picks], ["hello", "yes"])
+        self.assertEqual(picks[0]["paths"]["fixed_32"]["p"], 0.97)
+        self.assertEqual(picks[1]["dominant"], "left")  # swapped in so one left-handed signer is shown
+
     def test_summarise(self):
         def rec(sign, top, p, fixed=None, two=False, dom="right", who="a"):
             return {"sign": sign, "native_top5": top, "native_p": p, "native_ms": 10.0, "fixed": fixed or {},
@@ -165,6 +268,7 @@ class NotebookTests(unittest.TestCase):
         notebook = json.loads(builder.OUT.read_text(encoding="utf-8"))
         cells = ["".join(c["source"]) for c in notebook["cells"] if c["cell_type"] == "code"]
         labels = asl_islr.load_classes()
+        signs = ["hello", "thankyou", "please", "yes", "no"]
         rng = np.random.default_rng(3)
         with tempfile.TemporaryDirectory() as root:
             data = Path(root) / "asl-rerun"
@@ -172,7 +276,7 @@ class NotebookTests(unittest.TestCase):
             rows = ["path,participant_id,sequence_id,sign"] if layout == "paths" else ["sequence_id,participant_id,sign"]
             sequences = {}
             for i in range(30):
-                sign = labels[i % 5]
+                sign = signs[i % 5]
                 rel = f"landmarks/{i}.parquet" if layout == "paths" else f"test_landmark_files/{100 + i % 3}/{5000 + i}.parquet"
                 (data / rel).parent.mkdir(parents=True, exist_ok=True)
                 (data / rel).write_bytes(b"stand-in")
@@ -184,6 +288,7 @@ class NotebookTests(unittest.TestCase):
             classes_bytes = (ROOT / "models" / "asl" / "sign_to_prediction_index_map.json").read_bytes()
             (data / "sign_to_prediction_index_map.json").write_bytes(classes_bytes)
             output = Path(root) / "out.json"
+            tour_output = Path(root) / "tour.json"
 
             class FakeInterpreter:
                 def __init__(self, model_path):
@@ -195,7 +300,7 @@ class NotebookTests(unittest.TestCase):
                 def get_signature_runner(self, name):
                     def run(inputs):
                         scores = np.zeros(250, dtype=np.float32)
-                        scores[len(inputs) % 5] = 4.0  # right only when the length matches the sign
+                        scores[labels.index(signs[len(inputs) % 5])] = 20.0  # right only when the length matches the sign
                         return {"outputs": scores}
                     return run
 
@@ -206,6 +311,7 @@ class NotebookTests(unittest.TestCase):
                 for index, source in enumerate(cells):
                     if index == 0:
                         source = source.replace('"/kaggle/input"', repr(root)).replace('"/kaggle/working/asl_eval_results.json"', repr(str(output)))
+                        source = source.replace('"/kaggle/working/asl_tour_recordings.json"', repr(str(tour_output)))
                         exec(source, namespace)
                         namespace["MODEL"]["sha256"] = hashlib.sha256(b"stand-in model").hexdigest()
                         continue
@@ -213,14 +319,26 @@ class NotebookTests(unittest.TestCase):
                     if index == 1:  # the core: replace the parquet reader with the stand-in data
                         namespace["load_sequence"] = lambda path, check_order=False: sequences[path]
             results = json.loads(output.read_text())
+            tour = json.loads(tour_output.read_text())
         self.assertEqual(results["dataset"]["samples_evaluated"], 30)
         self.assertEqual(results["dataset"]["signers"], ["100", "101", "102"])
         self.assertEqual(results["layout_files_checked"], 5)
         summary = results["summary"]
         self.assertEqual(summary["samples"], 30)
-        self.assertTrue(math.isclose(summary["native"]["top1"], sum((10 + i) % 5 == i % 5 for i in range(30)) / 30))
-        self.assertEqual(set(summary["fixed_length"]), {"16", "24", "32", "48", "64"})
-        self.assertEqual(summary["fixed_length"]["32"]["samples"], 6)
+        self.assertTrue(math.isclose(summary["native"]["top1"], 1.0))
+        self.assertEqual(set(summary["fixed_length"]), {"32"})
+        self.assertEqual(summary["fixed_length"]["32"]["samples"], 30)
+        self.assertEqual(set(summary["paths"]), {"native", "native_mirrored", "native_tta", "fixed_32", "fixed_32_tta"})
+        fixed = summary["paths"]["fixed_32"]
+        self.assertTrue(math.isclose(fixed["top1"], 6 / 30))  # 32 frames always reads as "please"
+        self.assertEqual(sum(n for _t, _a, n in fixed["confusion"]), 30)
+        self.assertEqual(fixed["per_sign"]["hello"]["confused_with"], [["please", 6]])
+        self.assertEqual(tour["candidates_found"], 4)  # 6 "please" samples, minus the 2 with no hands in view
+        self.assertEqual([r["sign"] for r in tour["recordings"]], ["please"])
+        recording = tour["recordings"][0]
+        self.assertEqual(recording["expected"]["fixed_32"][0][0], "please")
+        self.assertEqual(recording["max_probability_change_from_storage"], 0.0)
+        self.assertFalse(recording["all_rows"])
         self.assertIn("right_slot_near_pose_right_wrist", results["conventions"])
         self.assertEqual(summary["groups"]["no_hands"]["samples"], 10)
 

@@ -1,30 +1,9 @@
-# SignBridge runtime dependencies (Python 3.10-3.14). Optional extras live in other files:
-#   requirements-postgres.txt  only when SIGNBRIDGE_DATABASE_URL points at PostgreSQL
-# OpenCV: MediaPipe already depends on opencv-contrib-python. Listing opencv-python as well
-# installs two packages that both provide cv2, so only the contrib build is listed.
-opencv-contrib-python>=4.10
+# SignMate's Python tools and tests (Python 3.10-3.14). The website itself needs no Python: these are for the
+# tests, the licence ledger, the model checks and the data tools.
+# MediaPipe also installs opencv-contrib-python (cv2), which the data tools use.
 mediapipe>=0.10.21
 numpy>=1.26
-# scikit-learn 1.11 removes SVC(probability=True), which train_model.py uses; the
-# replacement changes how probabilities are calibrated, so it is planned for Phase 3.
-scikit-learn>=1.5,<1.11
-joblib>=1.4
-Pillow>=10.0
-arabic-reshaper>=3.0
-python-bidi>=0.6
-pyttsx3>=2.98
-gTTS>=2.5
-# pygame-ce plays the cached audio files and is imported as "pygame". The original pygame
-# package has no Windows wheel for Python 3.14, so installation failed there. If an older
-# environment already has pygame installed, run "pip uninstall pygame" before installing.
-pygame-ce>=2.5
-fastapi>=0.115
-uvicorn[standard]>=0.34
-SQLAlchemy>=2.0
-# httpx is used by the API tests (FastAPI's TestClient).
-httpx>=0.27
-# ai-edge-litert is Google's TFLite runtime; the local server runs the ASL-mode model with it
-# (fast track Stage 2). Wheels exist for Windows, Linux and macOS, Python 3.10-3.14.
+# ai-edge-litert is Google's TFLite runtime: the Python side of the ASL model checks (ml_engine/asl_islr.py).
 ai-edge-litert>=2.3
 # PyYAML reads the licence ledger data/LICENSES.yaml (tools/check_licenses.py, data_engine/ledger.py).
 PyYAML>=6.0

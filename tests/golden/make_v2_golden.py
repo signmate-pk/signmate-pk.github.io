@@ -30,7 +30,61 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "tests")]
 
 from ml_engine.features_v2 import SPEC, canonicalize_frame, sequence_features  # noqa: E402
-from test_core import sample_hand  # noqa: E402
+
+# A synthetic hand (moved here from the Phase 0 tests/test_core.py, removed with the PSL desktop app in master v4).
+def sample_hand(extended, thumb="folded", spread=False, direction=None):
+    wrist = (0.5, 0.9, 0.0)
+    points = [wrist for _ in range(21)]
+    if spread:
+        bases = [0.3, 0.43, 0.58, 0.73]
+        tips = [0.16, 0.37, 0.64, 0.87]
+    elif extended == [True, True, True, True]:
+        bases = [0.46, 0.49, 0.53, 0.56]
+        tips = [0.44, 0.49, 0.54, 0.59]
+    else:
+        bases = [0.38, 0.46, 0.54, 0.62]
+        tips = bases
+    mcp_ids = [5, 9, 13, 17]
+    pip_ids = [6, 10, 14, 18]
+    dip_ids = [7, 11, 15, 19]
+    tip_ids = [8, 12, 16, 20]
+    for index, (base, mcp, pip, dip, tip) in enumerate(zip(bases, mcp_ids, pip_ids, dip_ids, tip_ids)):
+        points[mcp] = (base, 0.66 if index != 1 else 0.62, 0.0)
+        if extended[index]:
+            points[pip] = (base, 0.49, 0.0)
+            points[dip] = (tips[index], 0.36, 0.0)
+            points[tip] = (tips[index], 0.20, 0.0)
+        else:
+            points[pip] = (base, 0.50, 0.0)
+            points[dip] = (base + 0.04, 0.63, 0.0)
+            points[tip] = (base + 0.02, 0.72, 0.0)
+    if direction == "point":
+        base = bases[0]
+        points[6] = (base + 0.12, 0.62, 0.0)
+        points[7] = (base + 0.23, 0.59, 0.0)
+        points[8] = (base + 0.34, 0.56, 0.0)
+    if thumb == "extended":
+        points[1] = (0.44, 0.84, 0.0)
+        points[2] = (0.26, 0.73, 0.0)
+        points[3] = (0.08, 0.63, 0.0)
+        points[4] = (-0.12, 0.54, 0.0)
+    elif thumb == "up":
+        points[1] = (0.45, 0.70, 0.0)
+        points[2] = (0.44, 0.52, 0.0)
+        points[3] = (0.44, 0.30, 0.0)
+        points[4] = (0.44, 0.08, 0.0)
+    elif thumb == "down":
+        points[1] = (0.45, 1.06, 0.0)
+        points[2] = (0.44, 1.23, 0.0)
+        points[3] = (0.44, 1.40, 0.0)
+        points[4] = (0.44, 1.58, 0.0)
+    else:
+        points[1] = (0.46, 0.84, 0.0)
+        points[2] = (0.44, 0.78, 0.0)
+        points[3] = (0.45, 0.76, 0.0)
+        points[4] = (0.48, 0.74, 0.0)
+    return points
+
 
 OUTPUT = Path(__file__).resolve().parent / "v2_holistic.json.gz"
 SEED = 20261117

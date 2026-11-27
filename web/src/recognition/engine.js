@@ -1,40 +1,38 @@
-// The live PSL recogniser: camera -> MediaPipe landmarks -> sign cutter -> PSL model -> decision.
+// The live ASL recogniser: camera -> MediaPipe landmarks -> sign cutter -> ASL model -> decision.
 // Framework-free; the React screens talk to it through createEngine() and its events.
 //
-// Speed rules (audit 2026-11-26, measured in reports/perf_audit_2026-11-26.md):
+// The model is the ISLR 1st-place model (250 ASL signs, MIT; CLAUDE.md 10.6 baseline). It reads frames of 543 points:
+// face 468, left hand 21, pose 33, right hand 21 (it uses the lips, nose, eyes and both hands).
+//
+// Speed rules (audit 2026-11-26, measured in reports/perf_audit_2026-11-26.md, on the previous engine):
 //  - One pass per *camera* frame (requestVideoFrameCallback). The old loop ran on requestAnimationFrame,
 //    so a 60 or 120 Hz screen processed the same 30 fps camera frame two to four times.
-//  - The PSL model reads the two hands only (models/psl/manifest.json input.parts_read), so the face
-//    tracker does not run here (it cost 28 ms of 129 ms per frame in the audit run). Pose runs every
-//    second frame; it is used only to tell the left hand from the right (features v2, F12 rules).
-//  - Light mode, automatic: when the median frame takes over 40 ms, pose stops (hands only, handedness
-//    labels decide left/right). If frames still take over 40 ms, every other camera frame is skipped and
-//    the sign cutter's frame counts are halved so its timing in seconds stays the same.
+//  - The face tracker is back on (the ASL model reads face points) but at a lower rate: in full mode pose and face
+//    take turns (each runs every second frame; the other reuses its last result), in light mode pose stops and
+//    face runs every third frame. These rates are starting values: the audit measured the face tracker at 28 ms of
+//    129 ms per frame on a 2-core VM with no GPU, but they are not yet measured on ASL accuracy (Stage 3).
+//  - Light mode, automatic: when the median frame takes over 40 ms, pose stops (handedness labels decide left
+//    and right). If frames still take over 40 ms, every other camera frame is skipped and the sign cutter's frame
+//    counts are halved so its timing in seconds stays the same.
 //  - MediaPipe and the model are created once per page and kept (warmUp), so the camera restarts fast.
 // Privacy: only landmark numbers are used, in memory. No frame or image is stored or sent.
-import { SignSegmenter } from "../asl_islr.js";
-import { createPslRecognizer } from "../psl_client.js";
+import { islrFrame, SignSegmenter } from "../asl_islr.js";
+import { createAslModel } from "./asl_model.js";
 import { cameraAdvice, createCameraCheck, videoBrightness } from "../camera_check.js";
 import { createOverlay } from "./overlay.js";
 import { decide, DEFAULT_POLICY } from "./decision.js";
 
 export const HAND_COLOURS = { left: "#f5b8ff", right: "#9db4ff" };
-const NAN_ROW = Object.freeze([NaN, NaN, NaN]);
-const ROWS = 543;
-const LEFT = 468;
-const RIGHT = 522;
 export const LEVELS = ["full", "light", "light-skip"];
 const SLOW_MS = 40;
 const FAST_MS = 22;
 const WINDOW = 30;
 
-// The model's 543-row frame from capture v2's canonical hands. Face and pose rows stay NaN: the PSL model
-// does not read them. The hand rows are exactly what asl_islr.islrFrame puts there (tested).
-export function pslFrame(left, right) {
-  const frame = new Array(ROWS).fill(NAN_ROW);
-  if (left) for (let i = 0; i < 21; i += 1) frame[LEFT + i] = [Number(left[i][0]), Number(left[i][1]), Number(left[i][2])];
-  if (right) for (let i = 0; i < 21; i += 1) frame[RIGHT + i] = [Number(right[i][0]), Number(right[i][1]), Number(right[i][2])];
-  return frame;
+// Which trackers run on this frame (capture_v2 options.run): true = run, false = reuse the last result, "off" = none.
+// Full mode: pose and face take turns. Light modes: no pose; face every third frame. Hands run on every frame.
+export function trackingPlan(level, frameIndex) {
+  if (level === 0) return { pose: frameIndex % 2 === 0, face: frameIndex % 2 === 1 };
+  return { pose: "off", face: frameIndex % 3 === 0 };
 }
 
 // The sign cutter's rules with frame counts divided by `factor` (used when every other frame is skipped).
@@ -77,7 +75,7 @@ function makeCapture(delegate) {
   return (async () => {
     const { createCaptureV2, loadFeatureSpecV2 } = await import("../capture_v2.js");
     shared.featureSpec ??= await loadFeatureSpecV2();
-    return createCaptureV2({ spec: shared.featureSpec, parts: ["hands", "pose"], delegate });
+    return createCaptureV2({ spec: shared.featureSpec, parts: ["hands", "pose", "face"], delegate });
   })();
 }
 
@@ -92,13 +90,17 @@ export function switchCaptureToCpu() {
   return shared.capture;
 }
 
-export function warmUp({ manifest, spec }) {
+// The model alone (the guided tour needs no camera), or the trackers and the model together.
+export function warmModel({ aslSpec, labels }) {
+  shared.recognizer ??= createAslModel({ aslSpec, labels })
+    .catch(() => createAslModel({ aslSpec, labels, useWorker: false }))
+    .catch((error) => { shared.recognizer = null; throw error; });
+  return shared.recognizer;
+}
+
+export function warmUp({ aslSpec, labels }) {
   shared.capture ??= makeCapture("GPU").catch((error) => { shared.capture = null; throw error; });
-  if (manifest && spec) {
-    shared.recognizer ??= createPslRecognizer({ manifest, spec })
-      .catch(() => createPslRecognizer({ manifest, spec, useWorker: false }))
-      .catch((error) => { shared.recognizer = null; throw error; });
-  }
+  if (aslSpec && labels) warmModel({ aslSpec, labels });
   return { capture: shared.capture, recognizer: shared.recognizer };
 }
 
@@ -110,7 +112,7 @@ export function sharedRecognizer() {
 
 // emitHandsEvery: also send the raw hand points every N processed frames ({ type: "hand-points" }), for the
 // optional "Teach a sign" tools on the local server. 0 (default) sends none.
-export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY, onEvent = () => {}, emitHandsEvery = 0 }) {
+export function createEngine({ aslSpec, labels, policy = DEFAULT_POLICY, onEvent = () => {}, emitHandsEvery = 0 }) {
   let video = null;
   let overlay = null;
   let stream = null;
@@ -122,7 +124,7 @@ export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY,
   let adjust = (scores) => scores;
 
   const stats = {
-    level: 0, levelName: LEVELS[0], fps: 0, cameraFps: 0, captureMs: 0, handsMs: 0, poseMs: 0,
+    level: 0, levelName: LEVELS[0], fps: 0, cameraFps: 0, captureMs: 0, handsMs: 0, poseMs: 0, faceMs: 0,
     modelMs: null, latencyMs: null, delegates: {}, runtime: null, frames: 0, skipped: 0, signs: 0, frameErrors: 0,
   };
   const emit = (event) => { try { onEvent(event); } catch { /* a screen's handler must not stop the camera */ } };
@@ -149,7 +151,7 @@ export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY,
     emit({ type: "status", phase: "starting" });
     // Ask for the camera and load the trackers at the same time: the picture appears as soon as the
     // camera answers, tracking joins when MediaPipe is ready (cached after the first start).
-    const warm = warmUp({ manifest, spec });
+    const warm = warmUp({ aslSpec, labels });
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 30, max: 30 } }, audio: false });
     } catch (error) {
@@ -181,7 +183,7 @@ export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY,
         recognizer = value;
         stats.runtime = value.info;
         emit({ type: "status", phase: "ready" });
-      }).catch((error) => { if (myGeneration === generation) emit({ type: "error", code: "model", message: `The PSL model could not start: ${error?.message || error}` }); });
+      }).catch((error) => { if (myGeneration === generation) emit({ type: "error", code: "model", message: `The ASL model could not start: ${error?.message || error}` }); });
       emit({ type: "status", phase: "loading-model" });
     }
     running = true;
@@ -227,7 +229,7 @@ export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY,
           stats.signs += 1;
           emit({ type: "result", result, decision, quality, latencyMs: stats.latencyMs, at: performance.now() });
         })
-        .catch((error) => emit({ type: "error", code: "model", message: `The PSL model stopped: ${error?.message || error}` }))
+        .catch((error) => emit({ type: "error", code: "model", message: `The ASL model stopped: ${error?.message || error}` }))
         .finally(() => {
           busy = false;
           if (queued && myGeneration === generation) { const next = queued; queued = null; classify(...next); }
@@ -248,7 +250,7 @@ export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY,
       const started = performance.now();
       let out;
       try {
-        out = capture.processVideoFrame(video, now, { inputMirrored: false, run: { face: "off", pose: level >= 1 ? "off" : frameIndex % 2 === 0 ? true : false } });
+        out = capture.processVideoFrame(video, now, { inputMirrored: false, run: trackingPlan(level, frameIndex) });
         failures = 0;
       } catch (error) {
         // One bad frame is not a broken camera: only a run of failures stops the stage.
@@ -282,6 +284,7 @@ export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY,
         }
       }
       if (out.timings.pose != null) stats.poseMs = out.timings.pose;
+      if (out.timings.face != null) stats.faceMs = out.timings.face;
       push(processedTimes, now);
       stats.fps = rate(processedTimes);
       stats.cameraFps = rate(cameraTimes);
@@ -296,13 +299,13 @@ export function createEngine({ manifest, spec, aslSpec, policy = DEFAULT_POLICY,
       else restingNoticeShown = false;
 
       if (!check.done) {
-        // Without the face tracker, "face in view" is read from the pose (nose and shoulders).
-        // In light mode there is no pose to judge framing by, so framing is not counted against the person.
+        // "Face in view" comes from the face tracker, or from the pose (nose and shoulders) on frames that reuse it.
+        // In light mode with no face result yet, framing is not counted against the person.
         check.add({ ...out.frame, face: out.frame.face ?? (out.raw.pose || stats.level >= 1 ? true : null) }, frameIndex % 15 === 1 ? videoBrightness(video, sample) : null);
         if (check.done) emit({ type: "advice", advice: cameraAdvice(check.stats) });
       }
 
-      const sign = segmenter.push(pslFrame(left, right), present);
+      const sign = segmenter.push(islrFrame(out.raw, shared.featureSpec, aslSpec), present);
       if (segmenter.active !== signing) { signing = segmenter.active; emit({ type: "signing", active: signing }); }
       if (sign) {
         const hitMaxFrames = sign.length >= segmenter.maxFrames;

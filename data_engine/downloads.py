@@ -58,7 +58,7 @@ def fetch(item: dict, root: Path = ROOT, opener: Callable = urllib.request.urlop
     from data_engine.ledger import LicenceError, assert_allowed
 
     try:
-        assert_allowed(item["asset_id"], "redistribute_weights", purpose_language="ASL" if item["asset_id"].startswith("asl-") else "PSL")
+        assert_allowed(item["asset_id"], "redistribute_weights")
     except LicenceError as error:
         raise DownloadError(f"{item['path']}: {error}") from error
     target = Path(root) / item["path"]
