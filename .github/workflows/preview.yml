@@ -1,5 +1,5 @@
 # Checks and a preview build for work that is not on main yet (master-v3.md section 3).
-# Runs on every push to a v3/... branch, on every pull request into main, or by hand (Actions tab >
+# Runs on every push to a v3/... or v4/... branch, on every pull request into main, or by hand (Actions tab >
 # "Preview build and checks" > Run workflow). It NEVER publishes the live website: only website.yml
 # does that, on main.
 #
@@ -11,7 +11,7 @@ name: Preview build and checks
 
 on:
   push:
-    branches: ["v3/**"]
+    branches: ["v3/**", "v4/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
