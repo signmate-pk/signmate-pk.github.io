@@ -99,3 +99,30 @@ These amend sections 1-8. Where they conflict, this section wins; everything els
    they never generate sign descriptions, landmarks or labels that are not backed by a real clip.
 6. **Performance is a feature.** Every release passes the budgets in master-v3.md section 5, measured,
    not estimated.
+
+## 10. Master v4 amendments: ASL only (added 2026-11-27, docs/prompts/master-v4-asl.md)
+These amend sections 1-9. Where they conflict, this section wins; everything else still applies.
+The owner's decisions that go with it are in `docs/v4_owner_decisions.md`.
+
+1. **ASL is the language.** SignMate recognises and produces American Sign Language only. PSL is retired:
+   it is archived on the tag `psl-v3-final` and removed from `main`, the site and the build. Sections 2, 8.2
+   and 9.4 now read with "ASL" in place of "PSL". Other sign languages never carry labels into ASL. They may
+   pretrain an encoder only, if licensed.
+2. **Consent first, then licence.** Train or show only data recorded with the signers' consent and under a
+   licence that allows the use, recorded in the ledger **before** download. Never use material scraped from
+   video sites without signer consent, even when its licence would allow it (for example WLASL, MS-ASL,
+   OpenASL, YouTube-ASL, which were collected from video sites without asking the signers). Non-commercial
+   licences are used only after the owner confirms SignMate's non-commercial status (confirmed 2026-11-27).
+   Shipped weights or clips that need a licensor's permission are used only with it in writing.
+3. **Nothing is generated.** Type → Sign shows only real recordings, or landmark animations taken directly
+   from real recordings whose licence allows redistribution. No model invents a sign, a handshape, a
+   description or a gloss. Unknown words are fingerspelled from real letter recordings, or shown as "no sign
+   yet".
+4. **Honest captions.** Each caption word carries its confidence. A word that is not sure is marked and never
+   spoken automatically. Auto-speak is on only above a threshold where the measured wrong-word rate is
+   ≤ 1 %. Glosses are shown under the English. Type → Sign says it follows English word order, not ASL grammar.
+5. **Deaf-led.** The "Validated by Deaf signers" badge needs a recorded sign-off from a Deaf ASL user
+   (validator ID + date). Until then each sign says "Dataset sign — not yet validated by our reviewers".
+6. **Baseline protection** (9.1, unchanged). The ISLR 1st-place model is the baseline. A new model replaces it
+   only with a measured, side-by-side improvement on the same frozen, signer-independent test sets, without
+   breaking the latency budget.

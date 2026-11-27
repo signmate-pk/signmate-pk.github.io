@@ -23,3 +23,10 @@ The Phase 0 test suite (`python tools/run_all_tests.py`) must pass on every merg
 `docs/prompts/master-v3.md` is the plan in force. It keeps everything above, adds CLAUDE.md section 9
 and runs Stages 0-7 on the branch `v3/master` (pull request into `main`). The live website is updated
 only once, at Stage 7, when the owner merges that pull request.
+
+## Master v4: ASL only (from 2026-11-27)
+
+`docs/prompts/master-v4-asl.md` is the plan in force. It adds CLAUDE.md section 10 (ASL is the language;
+PSL is retired and archived on the tag `psl-v3-final`) and runs Stages 0-8 on the branch `v4/asl`. The
+owner's answers to its section 10 questions are in `docs/v4_owner_decisions.md`. The live website changes
+only at Stage 8, after the owner replies "release" and merges the pull request.
