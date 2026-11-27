@@ -1,98 +1,55 @@
-# SignBridge — Context pack (master v3: Stages 0-6 done, release prepared, 2026-11-21)
+# SignMate — Context pack (master v4: ASL only, Stage 0 in progress, 2026-11-27)
 
 ## Product goal
-A Deaf PSL signer and a hearing Urdu/English speaker hold a real conversation through one device.
-Signing becomes text and speech on first launch, with honest confidence; replies become text and
-reference sign clips. Works offline on a laptop, in a browser and on a phone.
+SignMate: American Sign Language ↔ English, in real time, in the browser, on the person's own device. A website
+only (no app, no offline copy). Every answer is a suggestion the signer confirms before anything is spoken.
 
-## Plan in force: master v3
-`docs/prompts/master-v3.md` (Stages 0-7) builds on the fast track (`docs/prompts/fast-track.md`,
-CLAUDE.md section 8) and adds CLAUDE.md section 9 (baseline protection, licensed internet-video
-learning, language purity, AI never invents a sign, measured performance budgets).
-All work happens on branch **`v3/master`**; `main` is the live website and changes only when the
-owner merges the v3 pull request in Stage 7. Stage 0 is done up to its gate (see "Waiting for");
-Stage 1 passed its gate (`reports/v3_stage1_web_learn.md`). Stages 2-6 are done with the limits in
-`reports/final_v3.md` (PSL v3: `reports/psl_v3.md`; exhibition kit: `docs/EXHIBITION_KIT.md`).
-Released: PR #2 (v3.0.0, GitHub Release with the shared copy), PR #3 (3.0.1 fixes), PR #4 (rename to
-SignMate, 2026-11-21). `main` deploys the live site on every push.
+## Plan in force: master v4
+`docs/prompts/master-v4-asl.md` (Stages 0-8) and CLAUDE.md section 10 (ASL is the language; consent first, then
+licence; nothing is generated; honest captions; Deaf-led; baseline protection; website only). The owner's answers to
+its section 10 questions and the later "website only" decision: `docs/v4_owner_decisions.md`.
+All work happens on the branch **`v4/asl`**. `main` is the live PSL site (commit `c90d4df`, PR #9) and changes only
+when the owner replies "release" and merges at Stage 8. The PSL project (v3) is archived on the tag `psl-v3-final`
+(to be created by the owner: `docs/HOW_TO_ARCHIVE_PSL.md`).
 
 ## Where things live
-- GitHub: `signmate-pk/signmate-pk.github.io` (organisation `signmate-pk`, owned by
-  `shaafrajput06-tech`; moved from `shaafrajput06-tech/SignBridge` on 2026-11-21, GitHub forwards the
-  old repository links). Live site: <https://signmate-pk.github.io/> (`shared_data/site.json`), the only one:
-  the old address was switched off on the owner's request (`tools/old_address_cleanup/`, `docs/DOMAIN.md`).
-- Name: **SignMate** (was SignBridge until 2026-11-21). Internal ids keep the old name on purpose:
-  bundle id `signbridge-psl`, browser storage keys, Python packages, baseline release names.
-- Any laptop: clone, `git checkout v3/master`, double-click `setup_windows.bat`
-  (`docs/SETUP_NEW_LAPTOP.md`). The owner has no folder shared with Claude; GitHub is the only home.
-- CI: `.github/workflows/website.yml` (main only: tests, build, deploy to Pages, results at `/ci/`);
-  `.github/workflows/preview.yml` (`v3/**` and pull requests: tests incl. the baseline comparison,
-  ASL worker + server check, Pages build and `build:shared` as artifacts; never deploys).
+- GitHub: `signmate-pk/signmate-pk.github.io`. Live site: <https://signmate-pk.github.io/> (`shared_data/site.json`).
+- The owner works on Windows (`D:\sigmbridge\SignMate`, a clone that may lag behind GitHub); GitHub is the source of truth.
+- Pages (v4): project page `web/index.html` (filled at build time by `web/scripts/landing-content.mjs` from committed
+  data); translator `web/translate/index.html` (React, `web/src/`; finds the site's files through
+  `<meta name="signmate-base" content="../">`); `web/public/app.html` forwards old links to `translate/`.
+- Recognition: `web/src/recognition/engine.js` (one pass per camera frame, light mode, GPU→CPU switch; hands every
+  frame, pose and face in turn) → `recognition/asl_model.js` (LiteRT.js in a worker, 32 frames) → `decision.js`.
+- CI: `.github/workflows/preview.yml` (`v4/**` and PRs: all tests incl. the baseline comparison in Chromium, the ASL
+  browser self-test with the translator on a fake camera, Lighthouse on `/` and `/translate/`; never deploys);
+  `website.yml` (main only: deploy to Pages). This workspace cannot download Actions artifacts (blob host blocked).
+- This workspace can push branches but not tags or releases (HTTP 403): those are owner steps.
 
-## Inference Baseline v1 (protected, CLAUDE.md 9.1)
-- Release `inference-baseline-v1` (tag on `42a572f`, asset `SignBridge.zip`, SHA-256 checked) holds
-  the zip; made in the owner's browser (this session's GitHub access cannot create releases).
-- `baseline/v1-site/` + `baseline/v1-shared/`: the built shared copy of 2026-11-19, byte for byte
-  (19 files in git; 47 third-party files restored by `python tools/baseline_v1.py restore
-  --download | --zip PATH | --from-sources`, each checked against `baseline/manifest.json`).
-- `tests/golden/baseline_v1_outputs.json`: what it produces on the golden fixtures, recorded in
-  Chromium by `node tools/baseline/run.mjs --record` (frames, resampling, segments, words, real model
-  top-5 for 39 cases). `tests/test_inference_baseline.py` and `web/tests/inference-baseline.test.mjs`
-  hold today's code to it; `run_all_tests.py` runs the browser comparison when the baseline is restored.
-- A new model replaces it only if better on top-1 on the same set and within the latency budget.
+## Baseline (protected, CLAUDE.md 9.1 / 10.6)
+- The ISLR 1st-place model (Hoyeol Sohn, MIT), `models/asl/model.tflite`, 11,242,036 bytes, SHA-256 `f55a2bb1…`.
+- Inference Baseline v1: `baseline/v1-site/`, tag `inference-baseline-v1`, `tests/golden/baseline_v1_outputs.json`
+  (unchanged; CI's browser comparison passed on `7d961e9`).
 
-## Current state
-- PSL: bundle `models/psl/` (v3.0.0-20261121, int8 1.85 MB, 69 signs + "not a sign", all Tier B,
-  "Community dataset — not yet validated"), trained on SignSpeak by `.github/workflows/psl-train.yml`
-  (run 44884632047). Fair phone test 98.6 % top-1 (weaker); one independent signer 35.7 % (14 clips).
-  Runs in the same LiteRT.js worker code as ASL; never spoken until the person confirms.
-- New on the site: PSL dictionary videos (31 offline) and a Dictionary page (788 SLT signs), sentence
-  builder, reply panel, quick/emergency phrases, AI helpers switch (camera check, personal adaptation,
-  helper), offline service worker, How well it works / Credits / What's new pages from
-  `shared_data/site_pages.json` (`tools/site_pages.py`, tested).
-- ASL mode: ISLR 1st-place TFLite (250 signs, MIT) — browser (LiteRT.js in a Web Worker, 32 frames)
-  and server (ai-edge-litert, native length). On v3 the worker works again (`web/src/wasm_locate.js`);
-  on the live `main` build it falls back to the page thread. GISLR rerun set (39,443 signs, Kaggle,
-  2026-11-20): top-1 86.2 %, top-5 95.4 % (native); 85.3 % at the browser's 32 frames; left/right gap 4.5
-  points (target 3, missed). Spoken aloud only at ≥ 0.70 (1.7 % wrong; 2.8 % at the 0.60 "Pretty sure").
-- Stage 1 web learning (`tools/web_learn`, `.github/workflows/web-learn.yml`), runs 44753806707 and
-  44767308852 (GitHub Actions, 2026-11-20): 785 of 788 SLT PSL dictionary clips kept (CC BY 4.0, one
-  performer), 3 rejected (no hands); 25 / 64 vocabulary entries have a clip (22 in run 1; the 3 added are
-  what / when / who, matched once "?" is ignored). Open web: run 1 found 33 videos, none sign language,
-  8 wrongly hinted PSL, none downloaded; run 2 found 1, Spanish Sign Language, labels blocked. Ledger check
-  of every manifest entry: PASSED. All web-learned signs are Tier B (single source).
-- Features v2 (971 values/frame), recording format v2, licence ledger (`data/LICENSES.yaml`, 23 assets,
-  `data_engine.ledger.assert_allowed`), vocabulary 64 entries — unchanged since fast-track Stage 2.
-- `npm run build:shared` (in `web/`) makes `web/dist-shared/SignMate-shared-copy.zip`.
-- Tests: `python tools/run_all_tests.py [--smoke]`. CI (preview run 44709553244): 180 Python tests
-  (2 skipped), licence check, Node v1 + v2 suites, baseline browser comparison — all passed.
+## Measured state
+- GISLR rerun set (39,443 signs, CC0, Kaggle CPU, 2026-11-20; `reports/asl_eval_results_2026-11-20.json` →
+  `shared_data/asl_results.json`, "totals only"): top-1 86.2 % native, top-5 95.4 %, 85.3 % at the browser's 32 frames
+  (every 5th sign); left- vs right-dominant 89.1 % vs 84.6 %; two-handed: 11 signs only. At ≥ 0.60: 97.2 % right on
+  76.6 % of signs; at ≥ 0.80: 99.0 % right (1.0 % wrong) on 64.2 %.
+- Not yet measured: per-sign results, the confusion matrix, test-time mirroring, calibration error (ECE), the live ASL
+  camera latency on named devices.
 
-## Waiting for (owner [ME])
-1. Phone self-test and a camera check with a person signing ASL (`docs/HOW_TO_MEASURE_SPEED.md`).
-   (Kaggle run: done. The owner's Kaggle account is not phone-verified: no internet or GPU in notebooks.)
-3. Done 2026-11-21: the move to `signmate-pk.github.io`. For Claude to push again, the Claude GitHub
-   App must be allowed on the `signmate-pk` organisation (`docs/DOMAIN.md` step 5).
+## Waiting for (owner)
+1. `docs/HOW_TO_ARCHIVE_PSL.md`: create the release `psl-v3-final` on `c90d4df`, reply "archived".
+2. `docs/HOW_TO_RUN_ASL_EVAL.md`: one Kaggle "Save & Run All"; attach `asl_eval_results.json` and
+   `asl_tour_recordings.json`. Then the agent commits them (`reports/asl_eval_results_<date>.json`,
+   `shared_data/tour/asl_tour_recordings.json`), runs `tools/asl_results.py`, and finishes `reports/v4_stage0.md`.
+3. Device names for the budgets (laptop + browser, Android phone), needed from Stage 3.
+4. Review the drafts: `docs/permission_requests.md` section 7 (Microsoft, ASL Citizen), `docs/outreach/` (Deaf reviewers).
 
 ## Open findings
-- The open web has almost no licensed PSL video: growth needs permissions from Deaf organisations.
-- The SLT dictionary's own word-mapping file was read (593 pairs) but matched 0 vocabulary words; the
-  baseline already maps 6 more (father, home, medicine, happy, sad, pain). Fix before the next web run.
-- "Pretty sure" (≥ 0.60) was shown for a PSL sign in ASL mode, and for 2 of 39 synthetic inputs: an
-  unknown/not-a-sign check is still needed (ASL and PSL, Stage 2). Speaking now needs ≥ 0.70.
-- The baseline's UI extras (10 colour themes, Test signs, How to sign clips, Training screen) have no
-  source in git; rebuild in Stages 3 and 5.
-- Carried over: F3 rejection only on desktop SVM · F4/F5 Flutter fixes not verified on a device · F7
-  `SVC(probability=True)` removed in scikit-learn 1.11 · F9 browser MediaPipe telemetry · F10
-  participant names served without auth · F12 mirroring unverified on real video · pose/face `.task`
-  hashes pinned but model cards not re-read · pose-based hand assignment ignores wrist visibility.
-
-## People and decisions
-- Deaf validation partner: none yet (requests drafted in `docs/permission_requests.md` [ME]).
-- Website address: `signmate-pk.github.io` (2026-11-20; `signbridge.github.io` is taken).
-- Compute: free Kaggle / Colab GPU via notebooks the owner starts; GitHub Actions for builds/checks.
-
-## Environment notes
-Claude's workspace: no package installs, no artifact downloads, GitHub API limited to this repository,
-no releases or tag pushes; headless Chrome 153 and Python mediapipe are available, so the baseline can
-be run here. Project: Python 3.10-3.14, Node 22.12+, mediapipe 0.10.x, @mediapipe/tasks-vision 1.2.2,
-@litertjs/core 2.6.0, scikit-learn < 1.11.
+- The GISLR rerun set's signer independence is the publisher's claim (no signer ids in its labels).
+- The face-tracker rate (every 2nd frame in full mode, every 3rd in light mode) is a starting value, not measured.
+- The ASL model has no "not a sign" class: resting or out-of-vocabulary movement can come out as a word (Stage 2).
+- `tools/web_learn/` is still PSL-shaped (its PSL tests are skipped); Stage 1 rebuilds it for ASL.
+- Recorded-sign drawings assume a 4:3 camera; GISLR recordings do not state their camera shape.
+- Urdu interface text is not shown (never reviewed); drafts are on `psl-v3-final`.

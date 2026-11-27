@@ -160,3 +160,41 @@ Contact route: the discussion tab of <https://www.kaggle.com/datasets/jahanzebna
 >
 > Thank you,
 > [Your name]
+
+## 7. Microsoft Research: ASL Citizen (master v4, drafted 2026-11-27) [ME: approve, then send]
+
+Why: ASL Citizen (83,399 videos, 2,731 signs, 52 signers, collected with consent under IRB
+approval) is the best source for growing SignMate from 250 to 1,000-2,000 signs. Its licence allows non-commercial,
+non-revenue-generating research use only, so shipping a model trained on it, or showing its clips on the website,
+needs Microsoft's written permission (CLAUDE.md 10.2). Until they answer in writing, ASL Citizen may be used for
+experiments and tests only, and nothing derived from it ships.
+
+Contact route: [the contact address given on the ASL Citizen dataset licence page,
+<https://www.microsoft.com/en-us/research/project/asl-citizen/dataset-license/>; check it there before sending].
+
+> **Subject:** Permission request: ASL Citizen in SignMate, a free non-commercial student project
+>
+> Dear ASL Citizen team,
+>
+> I am [Your name], a student in Pakistan. With my team I build SignMate (https://signmate-pk.github.io/), a free
+> website that recognises American Sign Language from a camera and shows the English word, entirely in the visitor's
+> browser. It has no ads, no payments, no accounts and no server: the camera picture never leaves the device. Every
+> answer is a suggestion the signer confirms, and every sign says it is not yet validated by our Deaf reviewers until
+> one has checked it.
+>
+> We would like to use ASL Citizen in two ways, and we understand both go beyond research use, so we are asking first:
+>
+> 1. Train a recognition model on ASL Citizen and publish the model's weights inside the free website (and its public
+>    code repository), so that visitors' browsers can run it.
+> 2. Show a few ASL Citizen videos as reference examples of how a sign looks, on the same free website.
+>
+> SignMate is and will stay free and non-commercial. We would credit ASL Citizen and Microsoft Research wherever the
+> model or videos appear, link to your licence, and remove anything you ask us to remove. If only one of the two uses
+> is possible, or neither, we will keep using the dataset for research and testing only, as the licence allows.
+>
+> Thank you for creating a dataset with the consent of its signers. That is exactly why we chose it.
+>
+> Kind regards,
+> [Your name]
+> [School / team, city]
+> [Email]

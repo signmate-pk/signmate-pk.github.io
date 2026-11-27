@@ -1,5 +1,9 @@
 # Set up SignMate on another laptop (Windows)
 
+> **PSL version (master v3), kept for history.** SignMate is now ASL only and a website only (master v4, CLAUDE.md
+> section 10). This guide is rewritten for ASL in master-v4 Stage 7; until then, do not follow its PSL, offline-copy
+> or app steps.
+
 SignMate was called SignBridge until 2026-11-21; some file names (`start_signbridge.bat`) keep the old name.
 
 Everything SignMate needs is on GitHub, so any laptop can run and edit it. Nothing has to be copied

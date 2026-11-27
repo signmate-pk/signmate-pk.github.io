@@ -1,5 +1,9 @@
 # SignMate website (GitHub Pages)
 
+> **PSL version (master v3), kept for history.** SignMate is now ASL only and a website only (master v4, CLAUDE.md
+> section 10). This guide is rewritten for ASL in master-v4 Stage 7; until then, do not follow its PSL, offline-copy
+> or app steps.
+
 **Address:** <https://signmate-pk.github.io/> (set in `shared_data/site.json`).
 
 This is the only address. The old one (`https://shaafrajput06-tech.github.io/SignBridge/`) was switched

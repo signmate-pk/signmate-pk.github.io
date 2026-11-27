@@ -75,7 +75,7 @@
     "attribution": "ASL Isolated Sign Recognition Rerun Set (Kaggle, CC0).",
     "source_url": "https://www.kaggle.com/datasets/sohier/461054610546105",
     "used_for": "Measures the ASL recogniser on signers it never saw; its recordings play in the guided tour.",
-    "checked": "2026-11-18"
+    "checked": "2026-11-27"
    },
    {
     "id": "mediapipe-hand-landmarker",

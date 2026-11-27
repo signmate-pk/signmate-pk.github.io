@@ -1,6 +1,6 @@
 // Prepare web/public/ before the dev server or a build starts (npm run assets).
 // - copies the shared specs and data the pages read (feature spec, ASL spec, results, site pages);
-// - copies the guided tour's recordings (shared_data/asl_tour_recordings.json, CC0 rerun set) when they exist;
+// - copies the guided tour's recordings (shared_data/tour/asl_tour_recordings.json, CC0 rerun set) when they exist;
 // - copies the committed hand model and the MediaPipe runtime;
 // - downloads the pinned model files listed in shared_data/downloads.json once (pose, face, ASL),
 //   refusing any file whose size or SHA-256 differs, and copies them into public/models/;
@@ -63,14 +63,14 @@ await mkdir(path.join(publicDir, "wasm"), { recursive: true });
 for (const name of ["feature_spec_v2.json", "asl_islr_spec.json", "asl_results.json", "site_pages.json"]) await cp(path.join(project, "shared_data", name), path.join(publicDir, name));
 
 // Guided tour and gallery references: real ASL recordings of Deaf signers from the GISLR rerun set (CC0, ledger
-// asl-gislr-rerun-set allows redistribute_data), picked by notebooks/asl_mode_eval.ipynb (web/src/ui/recordings.js).
+// asl-gislr-rerun-set allows reference_clip and redistribute_data), picked by notebooks/asl_mode_eval.ipynb (web/src/ui/recordings.js).
 await rm(path.join(publicDir, "tour"), { recursive: true, force: true });
-const tour = path.join(project, "shared_data", "asl_tour_recordings.json");
+const tour = path.join(project, "shared_data", "tour", "asl_tour_recordings.json");
 if (await exists(tour)) {
   await mkdir(path.join(publicDir, "tour"), { recursive: true });
   await cp(tour, path.join(publicDir, "tour", "asl_tour.json"));
 } else {
-  console.warn("No guided-tour recordings yet (shared_data/asl_tour_recordings.json): the tour says so.");
+  console.warn("No guided-tour recordings yet (shared_data/tour/asl_tour_recordings.json): the tour says so.");
 }
 
 await cp(path.join(project, "models", "hand_landmarker.task"), path.join(publicDir, "models", "hand_landmarker.task"));

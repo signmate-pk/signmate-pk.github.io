@@ -1,5 +1,9 @@
 # Demo script
 
+> **PSL version (master v3), kept for history.** SignMate is now ASL only and a website only (master v4, CLAUDE.md
+> section 10). This guide is rewritten for ASL in master-v4 Stage 7; until then, do not follow its PSL, offline-copy
+> or app steps.
+
 The **30-second** version is in [README.md](README.md#presenting-signmate-a-30-second-demo).
 
 ## 3-minute version

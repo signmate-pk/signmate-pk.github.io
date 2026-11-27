@@ -33,6 +33,7 @@ LANGUAGES = ("PSL", "ASL")
 # The most specific (longest) root wins. "shipped" roots end up inside the website build.
 SCAN_RULES: tuple[dict[str, Any], ...] = (
     {"root": "web/public/clips", "all_of": ("reference_clip", "redistribute_data"), "any_of": (), "shipped": True},
+    {"root": "shared_data/tour", "all_of": ("reference_clip", "redistribute_data"), "any_of": (), "shipped": True},
     {"root": "web/public/models", "all_of": ("redistribute_weights",), "any_of": (), "shipped": True},
     {"root": "models", "all_of": ("redistribute_weights",), "any_of": (), "shipped": True},
     {"root": "data", "all_of": (), "any_of": ("train_labels", "pretrain_encoder", "evaluate", "reference_clip"), "shipped": False},

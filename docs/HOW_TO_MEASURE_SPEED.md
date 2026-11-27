@@ -1,5 +1,9 @@
 # How to measure SignBridge's speed on your laptop and phone [ME]
 
+> **PSL version (master v3), kept for history.** SignMate is now ASL only and a website only (master v4, CLAUDE.md
+> section 10). This guide is rewritten for ASL in master-v4 Stage 7; until then, do not follow its PSL, offline-copy
+> or app steps.
+
 Stage 0 needs real numbers from **your** devices (master-v3.md section 3, Stage 0). Each test takes
 2-5 minutes. Nothing is uploaded: the self-test page uses made-up landmark data, not your camera.
 

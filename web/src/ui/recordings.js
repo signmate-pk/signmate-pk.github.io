@@ -1,6 +1,7 @@
 // Real recorded ASL signs for the guided tour and the sign gallery: a few sequences from the GISLR rerun set (CC0,
-// ledger asl-gislr-rerun-set: redistribute_data allowed), picked and re-checked by notebooks/asl_mode_eval.ipynb and
-// copied to the site as tour/asl_tour.json by scripts/copy-assets.mjs. They are landmark numbers of Deaf signers (no
+// ledger asl-gislr-rerun-set: reference_clip and redistribute_data allowed), picked and re-checked by
+// notebooks/asl_mode_eval.ipynb, committed as shared_data/tour/asl_tour_recordings.json and copied to the site as
+// tour/asl_tour.json by scripts/copy-assets.mjs. They are landmark numbers of Deaf signers (no
 // video), stored as int16 (value x quant, nan_code for a missing point) for the rows the model reads plus the pose.
 // Until the owner's Kaggle run delivers the file, there are none and the tour says so.
 import { assetUrl } from "../paths.js";

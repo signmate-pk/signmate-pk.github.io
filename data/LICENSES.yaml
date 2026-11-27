@@ -544,17 +544,19 @@ assets:
     licence: CC0-1.0
     licence_url: https://creativecommons.org/publicdomain/zero/1.0/
     licence_evidence: "Kaggle dataset metadata: 'CC0: Public Domain', version 5, 14150884811 bytes (search result metadata, 2026-11-18)."
-    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: false, redistribute_weights: true, redistribute_data: true}
+    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: true, redistribute_weights: true, redistribute_data: true}
     conditions: []
     attribution: "ASL Isolated Sign Recognition Rerun Set (Kaggle, CC0)."
     status: cleared
-    checked_on: "2026-11-18"
+    checked_on: "2026-11-27"
     checked_by: agent
     files:
       - path: data/asl-gislr-rerun-set/*
+      - path: shared_data/tour/*
     facts:
-      signers: "reported by a third-party project as 10 Deaf signers absent from the training set; confirm from the files in Stage 2"
-    notes: "Planned held-out test set for the Stage 2 ASL accuracy number. 14.2 GB: evaluate inside a Kaggle notebook, do not download."
+      signers: "reported by a third-party project as 10 Deaf signers absent from the training set; the label file has no signer ids, so this could not be re-checked"
+      consent: "Recorded in the same Deaf Professional Arts Network / Georgia Tech smartphone collection whose PopSign ASL v1.0 paper (NeurIPS 2023) describes '47 consenting Deaf adult signers' and whose dataset page says participants could record only after giving consent on a consent form (signdata.cc.gatech.edu PopSign v1.0, read 2026-11-27). The rerun set's own page does not state consent separately: confirm in master-v4 Stage 1."
+    notes: "Frozen signer-independent test set (master-v4 5.1); never trained on. 14.2 GB: evaluate inside a Kaggle notebook, do not download. reference_clip (2026-11-27): a few landmark recordings (no video) chosen by notebooks/asl_mode_eval.ipynb play in the website's guided tour and gallery from shared_data/tour/; CC0 allows it."
 
   - id: asl-popsign-v1
     name: PopSign ASL v1.0 (Georgia Tech, NTID, DPAN)

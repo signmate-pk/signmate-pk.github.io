@@ -5,7 +5,7 @@
 //     display names in shared_data/asl_islr_spec.json, so it is exactly what the camera can recognise;
 //   - results come from shared_data/asl_results.json (tools/asl_results.py, which builds it from the committed Kaggle
 //     results and refuses numbers that do not add up). While that file holds totals only, the page says so;
-//   - which signs have a recorded example comes from shared_data/asl_tour_recordings.json (CC0 rerun set), if present;
+//   - which signs have a recorded example comes from shared_data/tour/asl_tour_recordings.json (CC0 rerun set), if present;
 //   - speed rows come from reports/performance_v3.json (ASL rows); credits from shared_data/site_pages.json.
 //
 // Use as a Vite plugin (vite.config.js) or from the command line to look at the result without Vite:
@@ -40,7 +40,7 @@ export function loadInputs({ project = projectDir } = {}) {
     spec,
     labels,
     results,
-    tour: readJson(path.join(project, "shared_data", "asl_tour_recordings.json"), { recordings: [] }),
+    tour: readJson(path.join(project, "shared_data", "tour", "asl_tour_recordings.json"), { recordings: [] }),
     performance: readJson(path.join(project, "reports", "performance_v3.json"), { measurements: [] }),
     sitePages: readJson(path.join(project, "shared_data", "site_pages.json"), {}),
     sizes: { hand: statSync(handModel).size, pose: bytesOf("pose_landmarker_lite.task"), face: bytesOf("face_landmarker.task"), model: spec.model.bytes },
