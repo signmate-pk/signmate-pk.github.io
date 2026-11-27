@@ -1,19 +1,19 @@
 @echo off
-rem SignBridge: set up this computer in one go (for a second laptop, or after a fresh Windows install).
+rem SignMate: set up this computer for working on the website (for a second laptop, or after a fresh Windows install).
 rem   1. checks for Git, Python and Node.js, and offers to install any that are missing (winget)
 rem   2. installs the Python and website packages into this folder
 rem   3. downloads the pinned model files and the frozen Inference Baseline v1 (sizes and SHA-256 checked)
 rem   4. runs the quick test suite
-rem Run it from inside the SignBridge folder. It needs internet the first time (about 400 MB).
+rem Run it from inside the SignMate folder. It needs internet the first time (about 400 MB).
 rem Nothing is uploaded. Safe to run again: finished steps are quick the second time.
 setlocal
 cd /d "%~dp0"
 set "LOG=reports\setup_log.txt"
 if not exist reports mkdir reports
-echo SignBridge setup %DATE% %TIME% > "%LOG%"
+echo SignMate setup %DATE% %TIME% > "%LOG%"
 
 echo.
-echo  SignBridge setup
+echo  SignMate setup
 echo  ================
 echo.
 
@@ -70,7 +70,7 @@ if errorlevel 1 (
 
 echo.
 echo  Done. What next:
-echo    - start_signbridge.bat   runs SignBridge on this computer (opens your browser)
+echo    - start_web.bat          runs the website on this computer for development (http://localhost:5173)
 echo    - git pull               gets the newest work (run it in this folder)
 echo    - docs\SETUP_NEW_LAPTOP.md explains everything step by step
 echo.

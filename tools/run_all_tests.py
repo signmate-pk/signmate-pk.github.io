@@ -1,11 +1,10 @@
-"""Run every automated SignBridge test that this machine can run, and say what was skipped.
+"""Run every automated SignMate test that this machine can run, and say what was skipped.
 
-    python tools/run_all_tests.py           Python tests + licence ledger check + browser parity tests (Node)
-                                            + Inference Baseline v1 in a real browser (if restored) + Flutter tests (if installed)
+    python tools/run_all_tests.py           Python tests + licence ledger check + website tests (Node)
+                                            + Inference Baseline v1 in a real browser (if restored)
     python tools/run_all_tests.py --smoke   also the fake-camera browser smoke test (needs Playwright)
 
-Node tests that import src/vision.js need `npm install` in web/ (they load @mediapipe/tasks-vision).
-The v2 Node tests need no packages and run whenever Node is installed.
+The website's Node tests need no packages and run whenever Node is installed.
 
 Exit code is non-zero when any suite that ran has failures. Suites that cannot run here
 (for example Node is not installed) are reported as SKIPPED, never as passed.
@@ -39,18 +38,11 @@ def main() -> int:
     results["Licence ledger check"] = run("Licence ledger check", [sys.executable, str(ROOT / "tools" / "check_licenses.py")], ROOT)
 
     node = shutil.which("node")
-    all_node_tests = sorted((WEB / "tests").glob("*.test.mjs"))
-    needs_packages = [str(p.relative_to(WEB)) for p in all_node_tests if "src/vision.js" in p.read_text(encoding="utf-8")]
-    standalone = [str(p.relative_to(WEB)) for p in all_node_tests if str(p.relative_to(WEB)) not in needs_packages]
+    node_tests = [str(p.relative_to(WEB)) for p in sorted((WEB / "tests").glob("*.test.mjs"))]
     if not node:
-        results["Browser v1 parity tests (Node)"] = "SKIPPED: Node.js is not installed"
-        results["Browser v2 tests (Node)"] = "SKIPPED: Node.js is not installed"
+        results["Website tests (Node)"] = "SKIPPED: Node.js is not installed"
     else:
-        if not (WEB / "node_modules" / "@mediapipe" / "tasks-vision").exists():
-            results["Browser v1 parity tests (Node)"] = "SKIPPED: run npm install in the web folder first"
-        else:
-            results["Browser v1 parity tests (Node)"] = run("Browser v1 parity tests (Node)", [node, "--test", *needs_packages], WEB)
-        results["Browser v2 tests (Node)"] = run("Browser v2 tests (Node)", [node, "--test", *standalone], WEB)
+        results["Website tests (Node)"] = run("Website tests (Node)", [node, "--test", *node_tests], WEB)
 
     # Inference Baseline v1 (master-v3.md section 0): the frozen build and its real model in Chromium.
     if not node:
@@ -76,11 +68,6 @@ def main() -> int:
     else:
         results["Browser camera smoke test"] = "SKIPPED: add --smoke to run it"
 
-    flutter = shutil.which("flutter")
-    if not flutter:
-        results["Flutter tests"] = "SKIPPED: the Flutter SDK is not installed (mobile/test has unit tests to run with flutter test)"
-    else:
-        results["Flutter tests"] = run("Flutter tests", [flutter, "test"], ROOT / "mobile")
     print("\n=== Summary ===")
     for name, outcome in results.items():
         print(f"{name:<32} {outcome}")

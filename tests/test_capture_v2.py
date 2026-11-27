@@ -189,14 +189,10 @@ class NoImageOnDiskTests(unittest.TestCase):
     FORBIDDEN = {
         "python": [r"imwrite", r"VideoWriter", r"\.save\(", r"imencode", r"savez", r"np\.save", r"tofile"],
         "javascript": [r"MediaRecorder", r"toBlob", r"toDataURL", r"createObjectURL", r"writeFile", r"indexedDB", r"localStorage", r"captureStream"],
-        "dart": [r"writeAsBytes", r"writeAsString", r"openWrite", r"File\(", r"path_provider", r"getTemporaryDirectory", r"getApplicationDocumentsDirectory"],
     }
     SOURCES = {
         "python": ["ml_engine/capture_v2.py", "ml_engine/features_v2.py"],
         "javascript": ["web/src/capture_v2.js", "web/src/features_v2.js", "web/src/bench.js"],
-        # main.dart keeps consented landmark payloads in SQLite (sqflite), never images; frame_convert.dart
-        # encodes the upright JPEG in memory for the local server, which is not a disk write.
-        "dart": ["mobile/lib/frame_rotation.dart", "mobile/lib/frame_errors.dart", "mobile/lib/frame_convert.dart", "mobile/lib/main.dart"],
     }
 
     def test_capture_sources_contain_no_image_or_video_writers(self):

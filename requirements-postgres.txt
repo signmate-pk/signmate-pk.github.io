@@ -1,4 +1,0 @@
-# Optional: install only when SIGNBRIDGE_DATABASE_URL points at a PostgreSQL server.
-# SQLite (the default) needs nothing extra.
-#   python -m pip install -r requirements.txt -r requirements-postgres.txt
-psycopg[binary]>=3.2
