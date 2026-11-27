@@ -1,4 +1,4 @@
-# SignMate — Context pack (master v4: ASL only, Stage 0 in progress, 2026-11-27)
+# SignMate — Context pack (master v4: ASL only; Stage 0 state released 2026-11-27)
 
 ## Product goal
 SignMate: American Sign Language ↔ English, in real time, in the browser, on the person's own device. A website
@@ -8,9 +8,10 @@ only (no app, no offline copy). Every answer is a suggestion the signer confirms
 `docs/prompts/master-v4-asl.md` (Stages 0-8) and CLAUDE.md section 10 (ASL is the language; consent first, then
 licence; nothing is generated; honest captions; Deaf-led; baseline protection; website only). The owner's answers to
 its section 10 questions and the later "website only" decision: `docs/v4_owner_decisions.md`.
-All work happens on the branch **`v4/asl`**. `main` is the live PSL site (commit `c90d4df`, PR #9) and changes only
-when the owner replies "release" and merges at Stage 8. The PSL project (v3) is archived on the tag `psl-v3-final`
-(to be created by the owner: `docs/HOW_TO_ARCHIVE_PSL.md`).
+**Released early on the owner's request:** PR #10 (the Stage 0 state) was squash-merged into `main` as `ce34f15` on
+2026-11-27 and is live (`reports/release_v4.md`). Work continues on **`v4/asl`** (same content as `main`) and reaches
+`main` by pull request. The last PSL commit is `c90d4df` (PR #9), to be tagged `psl-v3-final` by the owner
+(`docs/HOW_TO_ARCHIVE_PSL.md`).
 
 ## Where things live
 - GitHub: `signmate-pk/signmate-pk.github.io`. Live site: <https://signmate-pk.github.io/> (`shared_data/site.json`).
@@ -39,7 +40,8 @@ when the owner replies "release" and merges at Stage 8. The PSL project (v3) is 
   camera latency on named devices.
 
 ## Waiting for (owner)
-1. `docs/HOW_TO_ARCHIVE_PSL.md`: create the release `psl-v3-final` on `c90d4df`, reply "archived".
+1. `docs/HOW_TO_ARCHIVE_PSL.md`: create the release `psl-v3-final` on `c90d4df`, reply "archived". Also tag `v4.0.0` on
+   `ce34f15` (`reports/release_v4.md`).
 2. `docs/HOW_TO_RUN_ASL_EVAL.md`: one Kaggle "Save & Run All"; attach `asl_eval_results.json` and
    `asl_tour_recordings.json`. Then the agent commits them (`reports/asl_eval_results_<date>.json`,
    `shared_data/tour/asl_tour_recordings.json`), runs `tools/asl_results.py`, and finishes `reports/v4_stage0.md`.
