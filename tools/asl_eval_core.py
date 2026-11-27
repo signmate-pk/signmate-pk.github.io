@@ -11,6 +11,13 @@ It measures, on the GISLR "rerun set" (the competition's hidden test data, CC0):
 - how often the predicted probability clears each threshold, and how accurate those predictions are;
 - which hand slot holds the dominant hand and how hand slots relate to pose wrists (the hand-slot
   convention that shared_data/asl_islr_spec.json assumes).
+
+Added for master v4, Stage 0 (2026-11-27):
+- test-time mirroring: the average of the model's answer on a sign and on its left/right mirror image,
+  using the exact flip the model was trained with (`flip_lr` below);
+- per "path" (native, native mirrored-average, 32 frames, 32 frames mirrored-average): top-1/top-5,
+  groups, calibration, expected calibration error, per-sign results and the full confusion matrix;
+- a few clear recordings for the website's guided tour, stored compactly and re-checked against the model.
 """
 
 from __future__ import annotations
@@ -51,6 +58,57 @@ def softmax_if_needed(scores: Sequence[float]) -> list[float]:
 
 def top5(probabilities: Sequence[float]) -> list[int]:
     return sorted(range(len(probabilities)), key=lambda i: (-probabilities[i], i))[:5]
+
+
+# --------------------------------------------------------------------------- the model's own left/right flip
+# Copied from the 1st-place solution's training augmentation `flip_lr` (Hoyeol Sohn,
+# ISLR_1st_place_Hoyeol_Sohn.ipynb in github.com/hoyso48/Google---Isolated-Sign-Language-Recognition-1st-place-solution,
+# MIT licence, read 2026-11-27): x becomes 1 - x and each row below swaps with its partner at the same position.
+# The model reads only these face rows plus both hands (its POINT_LANDMARKS: lips, nose, eyes); the pose rows are
+# swapped too, exactly as in the original, although the model does not read them.
+LIP = [0, 61, 185, 40, 39, 37, 267, 269, 270, 409, 291, 146, 91, 181, 84, 17, 314, 405, 321, 375,
+       78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308]
+LLIP = [84, 181, 91, 146, 61, 185, 40, 39, 37, 87, 178, 88, 95, 78, 191, 80, 81, 82]
+RLIP = [314, 405, 321, 375, 291, 409, 270, 269, 267, 317, 402, 318, 324, 308, 415, 310, 311, 312]
+NOSE = [1, 2, 98, 327]
+LNOSE = [98]
+RNOSE = [327]
+REYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 246, 161, 160, 159, 158, 157, 173]
+LEYE = [263, 249, 390, 373, 374, 380, 381, 382, 362, 466, 388, 387, 386, 385, 384, 398]
+LPOSE = [513, 505, 503, 501]
+RPOSE = [512, 504, 502, 500]
+LHAND_ROWS = list(range(*LEFT_HAND))
+RHAND_ROWS = list(range(*RIGHT_HAND))
+FLIP_SWAPS = ((LHAND_ROWS, RHAND_ROWS), (LLIP, RLIP), (LPOSE, RPOSE), (LEYE, REYE), (LNOSE, RNOSE))
+# Rows the model reads, by its source code (the tour export below checks this against the model itself).
+MODEL_ROWS = sorted(set(LIP + LHAND_ROWS + RHAND_ROWS + NOSE + REYE + LEYE))
+
+
+def flip_permutation() -> list[int]:
+    """Row order of the mirrored frame: mirrored[r] = original[perm[r]] (then x -> 1 - x)."""
+    perm = list(range(ROWS_PER_FRAME))
+    for left, right in FLIP_SWAPS:
+        for a, b in zip(left, right):
+            perm[a], perm[b] = b, a
+    return perm
+
+
+def flip_lr(sequence):
+    """The sign's left/right mirror image, as the model's training augmentation made it."""
+    import numpy as np
+
+    flipped = np.asarray(sequence, dtype=np.float32)[:, flip_permutation(), :].copy()
+    flipped[..., 0] = 1.0 - flipped[..., 0]
+    return flipped
+
+
+def _entry(probabilities: Sequence[float]) -> dict:
+    ranked = top5(probabilities)
+    return {"top5": [int(i) for i in ranked], "p": float(probabilities[ranked[0]])}
+
+
+def _average(a: Sequence[float], b: Sequence[float]) -> list[float]:
+    return [(x + y) / 2 for x, y in zip(a, b)]
 
 
 # --------------------------------------------------------------------------- reading the data
@@ -134,8 +192,12 @@ def convention_facts(sequence) -> dict:
 # --------------------------------------------------------------------------- evaluation
 
 def evaluate_sample(sequence, sign_index: int, predict: Callable[[Any], Sequence[float]], fixed_lengths: Iterable[int] = (),
-                    clock: Callable[[], float] | None = None) -> dict:
-    """Native and fixed-length predictions for one sample. `predict` maps frames x 543 x 3 to scores."""
+                    clock: Callable[[], float] | None = None, mirror: bool = False) -> dict:
+    """Native and fixed-length predictions for one sample. `predict` maps frames x 543 x 3 to scores.
+
+    With mirror=True each answer is also computed on the mirrored sign (flip_lr) and the two probability lists
+    are averaged ("test-time mirroring"). record["paths"] holds the top 5 and top probability of every path:
+    native, native_mirrored, native_tta, fixed_N and (with mirror) fixed_N_tta."""
     import time
 
     clock = clock or time.perf_counter
@@ -144,12 +206,20 @@ def evaluate_sample(sequence, sign_index: int, predict: Callable[[Any], Sequence
     elapsed = (clock() - started) * 1000
     ranked = top5(native)
     record = {"sign": int(sign_index), "native_top5": [int(i) for i in ranked], "native_p": float(native[ranked[0]]), "native_ms": float(elapsed),
-              "fixed": {}, **hand_facts(sequence)}
+              "fixed": {}, "paths": {"native": _entry(native)}, **hand_facts(sequence)}
+    if mirror:
+        mirrored = softmax_if_needed(predict(flip_lr(sequence)))
+        record["paths"]["native_mirrored"] = _entry(mirrored)
+        record["paths"]["native_tta"] = _entry(_average(native, mirrored))
     for frames in fixed_lengths:
         indices = resample_indices(len(sequence), frames)
-        fixed = softmax_if_needed(predict(sequence[indices] if hasattr(sequence, "shape") else [sequence[i] for i in indices]))
+        part = sequence[indices] if hasattr(sequence, "shape") else [sequence[i] for i in indices]
+        fixed = softmax_if_needed(predict(part))
         best = max(range(len(fixed)), key=lambda i: (fixed[i], -i))
         record["fixed"][str(frames)] = [int(best), float(fixed[best])]
+        record["paths"][f"fixed_{frames}"] = _entry(fixed)
+        if mirror:
+            record["paths"][f"fixed_{frames}_tta"] = _entry(_average(fixed, softmax_if_needed(predict(flip_lr(part)))))
     return record
 
 
@@ -205,6 +275,135 @@ def summarise(records: Sequence[dict], labels: Sequence[str], thresholds: Sequen
         if members:
             per_sign[label] = {"samples": len(members), "top1": top1(members)}
     out["per_sign"] = per_sign
+    names = sorted({name for r in records for name in r.get("paths", {})}, key=_path_order)
+    out["paths"] = {name: path_summary(records, name, labels, thresholds) for name in names}
+    return out
+
+
+def _path_order(name: str):
+    return (0 if name.startswith("native") else 1, len(name), name)
+
+
+def expected_calibration_error(pairs: Sequence[tuple[float, bool]], bins: int = 15) -> float | None:
+    """ECE with `bins` equal-width bins of the top-1 probability: the average gap between how sure the model
+    was and how often it was right, weighted by how many answers fall in each bin."""
+    if not pairs:
+        return None
+    totals = [[0, 0.0, 0] for _ in range(bins)]  # count, sum of confidence, correct
+    for confidence, correct in pairs:
+        b = min(bins - 1, max(0, int(confidence * bins)))
+        totals[b][0] += 1
+        totals[b][1] += confidence
+        totals[b][2] += int(correct)
+    return sum(abs(c / n - s / n) * n for n, s, c in totals if n) / len(pairs)
+
+
+def path_summary(records: Sequence[dict], name: str, labels: Sequence[str], thresholds: Sequence[float] = THRESHOLDS) -> dict:
+    """Everything the project page and reports need for one path: accuracy, groups, calibration, per sign and
+    the confusion matrix (sparse: [true index, answered index, count], every non-zero cell)."""
+    rs = [r for r in records if name in r.get("paths", {})]
+
+    def hit(r):
+        return r["paths"][name]["top5"][0] == r["sign"]
+
+    def top1(members):
+        return _rate(sum(hit(r) for r in members), len(members))
+
+    def top5_rate(members):
+        return _rate(sum(r["sign"] in r["paths"][name]["top5"] for r in members), len(members))
+
+    out: dict[str, Any] = {"samples": len(rs), "top1": top1(rs), "top5": top5_rate(rs)}
+    groups = {}
+    for group, test in (("one_handed", lambda r: not r["two_handed"]), ("two_handed", lambda r: r["two_handed"]),
+                        ("dominant_left", lambda r: r["dominant"] == "left"), ("dominant_right", lambda r: r["dominant"] == "right")):
+        members = [r for r in rs if test(r)]
+        groups[group] = {"samples": len(members), "top1": top1(members), "top5": top5_rate(members)}
+    out["groups"] = groups
+    left, right = groups["dominant_left"]["top1"], groups["dominant_right"]["top1"]
+    out["left_right_gap"] = None if left is None or right is None else left - right
+    out["calibration"] = [{"threshold": t, "coverage": _rate(len(c), len(rs)), "accuracy_when_covered": top1(c), "wrong_when_covered": None if not c else 1 - top1(c)}
+                          for t in thresholds for c in [[r for r in rs if r["paths"][name]["p"] >= t]]]
+    out["ece"] = expected_calibration_error([(r["paths"][name]["p"], hit(r)) for r in rs])
+    cells: dict[tuple[int, int], int] = {}
+    for r in rs:
+        key = (r["sign"], r["paths"][name]["top5"][0])
+        cells[key] = cells.get(key, 0) + 1
+    out["confusion"] = [[t, a, n] for (t, a), n in sorted(cells.items())]
+    per_sign = {}
+    for index, label in enumerate(labels):
+        members = [r for r in rs if r["sign"] == index]
+        if not members:
+            continue
+        wrong = sorted(((n, a) for (t, a), n in cells.items() if t == index and a != index), key=lambda x: (-x[0], x[1]))[:3]
+        per_sign[label] = {"samples": len(members), "top1": top1(members), "top5": top5_rate(members),
+                           "confused_with": [[labels[a], n] for n, a in wrong]}
+    out["per_sign"] = per_sign
+    return out
+
+
+# --------------------------------------------------------------------------- guided-tour recordings
+# A few clear, short, correctly read signs from the rerun set (CC0), stored as int16 (value x 10,000; -32768 for a
+# missing point) so the website's guided tour can replay them through the real model with no camera.
+TOUR_SIGNS = ("hello", "thankyou", "please", "yes", "no", "water", "mom", "dad", "happy", "bye")
+TOUR_QUANT = 10000
+TOUR_NAN = -32768
+TOUR_ROWS = sorted(set(MODEL_ROWS) | set(range(*POSE)))  # what the model reads, plus the pose for drawing arms
+
+
+def tour_candidate(record: dict, labels: Sequence[str], min_p: float = 0.9, min_frames: int = 12, max_frames: int = 64,
+                   path: str = "fixed_32") -> bool:
+    """A sign worth showing: one of TOUR_SIGNS, short, with a hand in view, and read right with at least `min_p` on
+    the native path and on the browser's path."""
+    if labels[record["sign"]] not in TOUR_SIGNS or record["dominant"] is None or not (min_frames <= record["frames"] <= max_frames):
+        return False
+    for name in ("native", path):
+        entry = record.get("paths", {}).get(name)
+        if not entry or entry["top5"][0] != record["sign"] or entry["p"] < min_p:
+            return False
+    return True
+
+
+def pick_tour(candidates: Sequence[dict], labels: Sequence[str], count: int = 6, path: str = "fixed_32") -> list[dict]:
+    """One candidate per sign, in TOUR_SIGNS order, the surest first; at least one left-dominant signer if any
+    candidate has one. Each candidate is a record with an extra "source" key (where its file is)."""
+    by_sign: dict[str, list[dict]] = {}
+    for record in candidates:
+        by_sign.setdefault(labels[record["sign"]], []).append(record)
+    chosen = []
+    for sign in TOUR_SIGNS:
+        if sign in by_sign and len(chosen) < count:
+            chosen.append(max(by_sign[sign], key=lambda r: (r["paths"][path]["p"], -r["frames"])))
+    if chosen and not any(r["dominant"] == "left" for r in chosen):
+        for i in range(len(chosen) - 1, -1, -1):
+            lefts = [r for r in by_sign[labels[chosen[i]["sign"]]] if r["dominant"] == "left"]
+            if lefts:
+                chosen[i] = max(lefts, key=lambda r: (r["paths"][path]["p"], -r["frames"]))
+                break
+    return chosen
+
+
+def encode_rows(sequence, rows: Sequence[int]) -> tuple[str, int]:
+    """Base64 of int16 little-endian values (frames x len(rows) x 3) and how many values had to be clipped."""
+    import base64
+    import numpy as np
+
+    part = np.asarray(sequence, dtype=np.float64)[:, list(rows), :]
+    scaled = np.round(part * TOUR_QUANT)
+    clipped = int(np.sum(np.abs(scaled[~np.isnan(scaled)]) > 32767))
+    codes = np.where(np.isnan(scaled), TOUR_NAN, np.clip(np.nan_to_num(scaled), -32767, 32767)).astype("<i2")
+    return base64.b64encode(codes.tobytes()).decode("ascii"), clipped
+
+
+def decode_rows(text: str, frames: int, rows: Sequence[int], total_rows: int = ROWS_PER_FRAME):
+    """The inverse of encode_rows: frames x total_rows x 3 float32, NaN in every row that was not stored."""
+    import base64
+    import numpy as np
+
+    codes = np.frombuffer(base64.b64decode(text), dtype="<i2").reshape(frames, len(rows), 3)
+    values = codes.astype(np.float32) / TOUR_QUANT
+    values[codes == TOUR_NAN] = np.nan
+    out = np.full((frames, total_rows, 3), np.nan, dtype=np.float32)
+    out[:, list(rows), :] = values
     return out
 
 
