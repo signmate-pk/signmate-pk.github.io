@@ -10,28 +10,13 @@ import { sentenceLines } from "./speech.js";
 import { label, withRoman } from "./signs.js";
 import { t } from "./i18n.js";
 
-const QUICK = ["hello", "thank_you", "please", "sorry", "yes", "no", "wait", "repeat", "speak_slowly", "i_do_not_understand"];
-const EMERGENCY = ["emergency", "help", "pain", "doctor", "hospital", "call", "dangerous", "medicine"];
-
 function Ring({ progress }) {
   const r = 9;
   const c = 2 * Math.PI * r;
   return <svg className="mini-ring" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r={r} className="ring-track" /><circle cx="11" cy="11" r={r} className="ring-value" strokeDasharray={`${c * progress} ${c}`} transform="rotate(-90 11 11)" /></svg>;
 }
 
-export function QuickPhrases({ vocabulary, lang, onSpeak }) {
-  const byId = useMemo(() => new Map(vocabulary.map((item) => [item.id, item])), [vocabulary]);
-  const row = (ids, cls) => ids.map((id) => byId.get(id)).filter(Boolean).map((item) => <button key={item.id} className={`phrase ${cls}`} onClick={() => onSpeak(item)} dir="auto">{lang === "ur" ? item.urdu : lang === "roman" ? item.romanUrdu : item.english}</button>);
-  if (!vocabulary.length) return null;
-  return <details className="card quick">
-    <summary><Icon name="chat" />{t("quickPhrases", lang)}</summary>
-    <div className="phrase-row">{row(QUICK, "")}</div>
-    <p className="kicker danger">{t("emergency", lang)}</p>
-    <div className="phrase-row">{row(EMERGENCY, "urgent")}</div>
-  </details>;
-}
-
-export default function SentencesScreen({ bundle, lang, cameraWanted, setCameraWanted, onEngine, vocabulary, onSpeakSentence, onSpeakPhrase, pauseMs }) {
+export default function SentencesScreen({ bundle, lang, cameraWanted, setCameraWanted, onEngine, onSpeakSentence, pauseMs }) {
   const [state, setState] = useState(tray.emptyTray);
   const [now, setNow] = useState(() => performance.now());
   const [checkItem, setCheckItem] = useState(null);
@@ -105,7 +90,7 @@ export default function SentencesScreen({ bundle, lang, cameraWanted, setCameraW
           <button className={`tray-chip ${menu === i ? "on" : ""}`} onClick={() => setMenu(menu === i ? -1 : i)} aria-expanded={menu === i} dir="auto">{label(word, lang)}</button>
           {menu === i && <div className="chip-menu glass" role="menu">
             <button role="menuitem" className="btn btn-quiet btn-sm" onClick={() => { setState((s) => tray.remove(s, i)); setMenu(-1); }}><Icon name="clear" size={16} />{t("remove", lang)}</button>
-            {(word.choices || []).filter((c) => c.gloss !== word.gloss).slice(0, 3).map((c) => <button key={c.gloss} role="menuitem" className="btn btn-glass btn-sm" onClick={() => { setState((s) => tray.replace(s, i, withRoman(c))); setMenu(-1); }} dir="auto">{lang === "ur" ? "بدلیں: " : "Swap: "}{label(withRoman(c), lang)}</button>)}
+            {(word.choices || []).filter((c) => c.gloss !== word.gloss).slice(0, 3).map((c) => <button key={c.gloss} role="menuitem" className="btn btn-glass btn-sm" onClick={() => { setState((s) => tray.replace(s, i, withRoman(c))); setMenu(-1); }} dir="auto">Swap: {label(withRoman(c), lang)}</button>)}
           </div>}
         </div>)}
         {state.pending && <div className="tray-slot"><span key={state.pending.at} className="tray-chip pending fly-in" dir="auto">
@@ -125,8 +110,6 @@ export default function SentencesScreen({ bundle, lang, cameraWanted, setCameraW
       </div>
       {!words.length && <small id="speak-why" className="muted center-text">{t("speakNeedsWords", lang)}</small>}
     </section>
-
-    <QuickPhrases vocabulary={vocabulary} lang={lang} onSpeak={onSpeakPhrase} />
 
     {checkItem && <div className="sheet-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setCheckItem(null); }}>
       <section className="sheet" role="dialog" aria-modal="true" aria-label={t("checkTitle", lang)}>

@@ -1,9 +1,9 @@
-// ASL mode self-test (web/asl-selftest.html). No camera: made-up landmark sequences only.
-// Reports: does the browser runtime (LiteRT.js) load and run, how long one sign takes, is it
-// deterministic, and does it match the server runtime (ai-edge-litert) on the very same input.
+// ASL model self-test (web/asl-selftest.html). No camera: made-up landmark sequences only.
+// Reports: does the browser runtime (LiteRT.js) load and run, in the worker or on the page, how long one sign takes,
+// and is it deterministic. (The comparison with the local server went with the server: SignMate is a website only.)
 import { loadFeatureSpecV2 } from "./capture_v2.js";
 import { islrFrame, loadAslSpec, probabilities, resample } from "./asl_islr.js";
-import { createBrowserAsl, createServerAsl, loadAslLabels } from "./asl_client.js";
+import { createBrowserAsl, loadAslLabels } from "./asl_client.js";
 import { syntheticRawSequence } from "./synthetic_sign.js";
 
 const statusEl = document.getElementById("status");
@@ -38,14 +38,6 @@ async function main() {
   }
   if (!browser) summary.browser = { ok: false };
 
-  let server = null;
-  try {
-    server = await createServerAsl({ aslSpec, labels });
-    summary.server = { ok: true, ...server.info };
-  } catch (error) {
-    summary.server = { ok: false, reason: String(error.message || error) };
-  }
-
   summary.signs = [];
   for (const sign of signs) {
     const fixed = resample(sign.sequence, frames);
@@ -68,26 +60,14 @@ async function main() {
         top1: labels[argmax(probs)],
         top1Probability: Math.round(Math.max(...probs) * 1e4) / 1e4,
       };
-      if (server) {
-        const fixedReply = await server.scores(fixed);
-        const serverProbs = probabilities(fixedReply.scores);
-        entry.parityFixedInput = { maxAbsProbabilityDifference: maxDiff(probs, serverProbs), sameTop1: argmax(probs) === argmax(serverProbs), serverMs: fixedReply.ms };
-      }
-    }
-    if (server) {
-      const nativeReply = await server.scores(sign.sequence);
-      entry.serverNative = { top1: nativeReply.top[0].label, top1Probability: nativeReply.top[0].probability, ms: nativeReply.ms };
     }
     summary.signs.push(entry);
   }
   summary.finishedAt = new Date().toISOString();
-  const parity = summary.signs.map((s) => s.parityFixedInput).filter(Boolean);
   summary.verdict = {
     browserRuns: Boolean(browser) && summary.signs.every((s) => s.browser?.finite && s.browser.deterministic && Math.abs(s.browser.probabilitySum - 1) < 1e-3),
-    serverRuns: Boolean(server),
     // The camera view stays smooth only when the model runs in the worker; the page thread is a fallback.
     workerRuns: summary.browser?.thread === "worker",
-    runtimesAgree: parity.length ? parity.every((p) => p.sameTop1 && p.maxAbsProbabilityDifference < 1e-3) : null,
   };
   browser?.close();
   return summary;
@@ -95,7 +75,7 @@ async function main() {
 
 main().then((summary) => {
   window.__aslSelfTest = summary;
-  statusEl.textContent = `Done. Browser runtime: ${summary.verdict.browserRuns ? "works" : "FAILED"} (${summary.verdict.workerRuns ? "background worker" : "page thread fallback"}) · server runtime: ${summary.verdict.serverRuns ? "works" : "not available"} · runtimes agree: ${summary.verdict.runtimesAgree === null ? "not compared" : summary.verdict.runtimesAgree ? "yes" : "NO"}`;
+  statusEl.textContent = `Done. Browser runtime: ${summary.verdict.browserRuns ? "works" : "FAILED"} (${summary.verdict.workerRuns ? "background worker" : "page thread fallback"})`;
   resultEl.textContent = JSON.stringify(summary, null, 2);
 }).catch((error) => {
   window.__aslSelfTest = { error: String(error.message || error) };

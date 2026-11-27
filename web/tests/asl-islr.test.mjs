@@ -1,5 +1,5 @@
 // ASL mode browser code: model-file patching (on a hand-built TFLite flatbuffer), resampling, layout,
-// segmenter and the server client. Needs no npm packages. Cross-language parity with Python is in
+// segmenter. Needs no npm packages. Cross-language parity with Python is in
 // tests/test_asl_islr.py (it runs tests/tools/dump-asl.mjs).
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -7,7 +7,6 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { checkAslSpec, confidenceBand, patchTfliteFrames, readTfliteInput, resample, resampleIndices, sequenceForJson, SignSegmenter, toFloat32 } from "../src/asl_islr.js";
-import { createServerAsl } from "../src/asl_client.js";
 
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const aslSpec = checkAslSpec(JSON.parse(readFileSync(path.join(project, "shared_data/asl_islr_spec.json"), "utf8")));
@@ -104,25 +103,3 @@ test("the segmenter finds one sign with its margins", () => {
   assert.equal(confidenceBand(0.1, aslSpec), "none");
 });
 
-test("the server client checks the feature version and turns replies into results", async () => {
-  const labels = Array.from({ length: 250 }, (_, i) => `sign${i}`);
-  const replies = {
-    "/api/asl/status": { available: true, runtime: "ai-edge-litert", feature_version: aslSpec.feature_version },
-    "/api/asl/predict": { top: [{ label: "sign3", display: "sign3", probability: 0.8 }], ms: 12 },
-  };
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = async (url) => ({ ok: true, json: async () => replies[url] });
-  try {
-    const server = await createServerAsl({ aslSpec, labels });
-    const result = await server.predict([Array.from({ length: 543 }, () => [NaN, NaN, NaN])]);
-    assert.equal(result.band, "sure");
-    assert.equal(result.top[0].label, "sign3");
-    assert.equal(result.runtime, "server");
-    replies["/api/asl/status"] = { available: true, feature_version: "asl-islr-999" };
-    await assert.rejects(createServerAsl({ aslSpec, labels }), /feature version/);
-    replies["/api/asl/status"] = { available: false, reason: "model missing" };
-    await assert.rejects(createServerAsl({ aslSpec, labels }), /model missing/);
-  } finally {
-    globalThis.fetch = realFetch;
-  }
-});

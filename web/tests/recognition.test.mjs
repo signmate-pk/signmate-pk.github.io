@@ -7,30 +7,22 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { decide, practiceFeedback, thresholdFor, DEFAULT_POLICY, REASONS, HINTS, confidenceWord } from "../src/recognition/decision.js";
 import * as tray from "../src/recognition/sentence_tray.js";
-import { islrFrame } from "../src/asl_islr.js";
-import { canonicalizeFrame } from "../src/features_v2.js";
-import { syntheticRawSequence } from "../src/synthetic_sign.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const project = path.resolve(here, "../..");
-const manifest = JSON.parse(readFileSync(path.join(project, "models/psl/manifest.json"), "utf8"));
-const featureSpec = JSON.parse(readFileSync(path.join(project, "shared_data/feature_spec_v2.json"), "utf8"));
 const aslSpec = JSON.parse(readFileSync(path.join(project, "shared_data/asl_islr_spec.json"), "utf8"));
 // engine.js imports browser-only modules lazily; its pure helpers load under Node.
 globalThis.location ??= { href: "http://localhost/", hostname: "localhost" };
-const { pslFrame, scaledSegmentation, nextLevel } = await import("../src/recognition/engine.js");
+const { scaledSegmentation, nextLevel } = await import("../src/recognition/engine.js");
+const { aslSigns, logProbabilities, rankAsl } = await import("../src/recognition/asl_model.js");
+const { adapt, emptyPersonal, learn } = await import("../src/personal.js");
 
-const entry = (gloss, probability, unknown = false) => ({ gloss, english: gloss, urdu: gloss, probability, unknown });
+const entry = (gloss, probability, unknown = false) => ({ gloss, english: gloss, probability, unknown });
 
-test("policy thresholds come from the manifest and the measured weak signs", () => {
-  assert.equal(DEFAULT_POLICY.accept, manifest.confidence.sure);
-  assert.equal(DEFAULT_POLICY.suggest, manifest.confidence.unsure);
-  for (const gloss of Object.keys(DEFAULT_POLICY.perSign)) {
-    const cls = manifest.classes.find((c) => c.gloss === gloss);
-    assert.ok(cls, gloss);
-    assert.ok(cls.device_held_out.top1 < 0.9, `${gloss} is one of the weaker signs`);
-    assert.ok(thresholdFor(gloss) > DEFAULT_POLICY.accept);
-  }
+test("policy thresholds come from the ASL spec; no per-sign thresholds until per-sign results exist", () => {
+  assert.equal(DEFAULT_POLICY.accept, aslSpec.confidence.sure);
+  assert.equal(DEFAULT_POLICY.suggest, aslSpec.confidence.unsure);
+  assert.deepEqual(DEFAULT_POLICY.perSign, {});
   assert.equal(thresholdFor("water"), DEFAULT_POLICY.accept);
 });
 
@@ -42,9 +34,11 @@ test("accept needs the threshold and a clear lead", () => {
   assert.equal(close.choices.length, 2);
 });
 
-test("weak signs need more confidence", () => {
-  assert.equal(decide({ top: [entry("help", 0.7), entry("you", 0.1)] }).verdict, "check");
-  assert.equal(decide({ top: [entry("help", 0.8), entry("you", 0.1)] }).verdict, "accept");
+test("a sign given its own threshold needs more confidence", () => {
+  const policy = { ...DEFAULT_POLICY, perSign: { where: 0.75 } };
+  assert.equal(thresholdFor("where", policy), 0.75);
+  assert.equal(decide({ top: [entry("where", 0.7), entry("who", 0.1)] }, {}, policy).verdict, "check");
+  assert.equal(decide({ top: [entry("where", 0.8), entry("who", 0.1)] }, {}, policy).verdict, "accept");
 });
 
 test("low confidence, 'not a sign' first, and resting hands are rejected with no words offered", () => {
@@ -66,8 +60,8 @@ test("'Not a sign' is never offered as a choice", () => {
   assert.ok(out.choices.every((c) => !c.unknown));
 });
 
-test("every reason has an English and an Urdu hint", () => {
-  for (const reason of Object.values(REASONS)) { assert.ok(HINTS[reason].en); assert.ok(HINTS[reason].ur); }
+test("every reason has an English hint", () => {
+  for (const reason of Object.values(REASONS)) assert.ok(HINTS[reason].en);
 });
 
 test("practice feedback", () => {
@@ -121,15 +115,28 @@ test("tray: corrections", () => {
   assert.deepEqual(tray.clear().words, []);
 });
 
-test("pslFrame gives the same hand rows as islrFrame", () => {
-  for (const raw of syntheticRawSequence(7, 12, "alternating")) {
-    const canonical = canonicalizeFrame(raw, featureSpec);
-    const ours = pslFrame(canonical.left_hand, canonical.right_hand);
-    const reference = islrFrame(raw, featureSpec, aslSpec);
-    assert.equal(ours.length, 543);
-    for (const i of [...Array(21).keys()].flatMap((k) => [468 + k, 522 + k])) assert.deepEqual(ours[i], reference[i]);
-    assert.ok(ours.slice(0, 468).every((row) => row.every(Number.isNaN)), "face rows are NaN (the PSL model does not read them)");
-  }
+test("the engine's ASL model ranks the 250 signs and personal adaptation can move the ranking", () => {
+  const labels = Array.from({ length: 250 }, (_, i) => (i === 3 ? "thankyou" : `sign${i}`));
+  const signs = aslSigns(labels, aslSpec);
+  assert.equal(signs[3].english, "thank you");
+  const raw = new Array(250).fill(0);
+  raw[3] = 4; raw[7] = 3.5; // logits
+  const logp = logProbabilities(raw);
+  assert.ok(Math.abs(logp.reduce((a, v) => a + Math.exp(v), 0) - 1) < 1e-9);
+  const top = rankAsl(logp, signs);
+  assert.deepEqual(top.slice(0, 2).map((e) => e.index), [3, 7]);
+  assert.ok(top.every((e) => e.unknown === false && e.probability > 0));
+  assert.ok(Math.abs(top[0].probability - Math.exp(4) / (Math.exp(4) + Math.exp(3.5) + 248)) < 1e-9);
+  assert.equal(decide({ top }).best.gloss, "thankyou");
+  // A person who keeps confirming sign 7 nudges it ahead (personal.js works on log-probabilities).
+  let personal = emptyPersonal("asl-test", 250);
+  for (let i = 0; i < 12; i += 1) personal = learn(personal, logp, 7);
+  assert.equal(rankAsl(adapt(logp, personal), signs)[0].index, 7);
+  // Ties keep the lower index first, like asl_islr.topK.
+  assert.deepEqual(rankAsl(logProbabilities(new Array(250).fill(0)), signs, 3).map((e) => e.index), [0, 1, 2]);
+  // Probabilities in, probabilities out (the model may already end in a softmax).
+  const probs = new Array(250).fill(0.5 / 249); probs[9] = 0.5;
+  assert.equal(rankAsl(logProbabilities(probs), signs)[0].index, 9);
 });
 
 test("halving the frame rate halves the cutter's frame counts", () => {

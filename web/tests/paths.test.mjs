@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { assetUrl, HAS_SERVER } from "../src/paths.js";
+import { assetUrl, pageBase } from "../src/paths.js";
 
 const src = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../src");
 
@@ -14,7 +14,17 @@ test("files resolve next to the page, at a root or under a sub-path", () => {
   assert.equal(assetUrl("/wasm", "./", "https://u.github.io/SignBridge/index.html"), "https://u.github.io/SignBridge/wasm");
   assert.equal(assetUrl("litert/", "./", "https://u.github.io/SignBridge/asl-selftest.html"), "https://u.github.io/SignBridge/litert/");
   assert.equal(assetUrl("vocabulary.json", "/", "http://localhost:5173/"), "http://localhost:5173/vocabulary.json");
-  assert.equal(HAS_SERVER, true, "without VITE_API_BASE the local server is expected");
+});
+
+test("the translator page in /translate/ finds the files at the site root", () => {
+  assert.equal(assetUrl("models/asl/model.tflite", "../", "https://signmate-pk.github.io/translate/"), "https://signmate-pk.github.io/models/asl/model.tflite");
+  assert.equal(assetUrl("models/asl/model.tflite", "../", "https://u.github.io/repo/translate/#/words"), "https://u.github.io/repo/models/asl/model.tflite");
+  const doc = { querySelector: (selector) => (selector === 'meta[name="signmate-base"]' ? { getAttribute: () => "../" } : null) };
+  assert.equal(pageBase(doc), "../");
+  assert.equal(pageBase({ querySelector: () => null }), null);
+  assert.equal(pageBase(undefined), null);
+  const page = readFileSync(path.resolve(src, "../translate/index.html"), "utf8");
+  assert.match(page, /<meta name="signmate-base" content="\.\.\/" \/>/);
 });
 
 test("no source file fetches the website's own files from the site root", () => {

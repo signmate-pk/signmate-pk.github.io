@@ -1,11 +1,8 @@
-// Chooses where the ASL model runs and gives the page one predict(sign) call.
-//   "server":  the SignBridge server on this computer (ai-edge-litert); takes the sign's real length,
-//              the way the model was built. Used when the server is running.
-//   "browser": LiteRT.js in a Web Worker (or on the page if workers fail); the sign is resampled to the
-//              fixed frame count in shared_data/asl_islr_spec.json. Works with no server at all.
-// Either way only landmark numbers are used; no image leaves the browser.
-import { confidenceBand, labelsFromIndexMap, resample, sequenceForJson, toFloat32, topK } from "./asl_islr.js";
-import { API_BASE, HAS_SERVER, assetUrl } from "./paths.js";
+// Runs the ASL model in the browser and gives the page one predict(sign) call: LiteRT.js in a Web Worker (or on the
+// page if workers fail); the sign is resampled to the fixed frame count in shared_data/asl_islr_spec.json. SignMate is
+// a website only (CLAUDE.md 10.7): there is no server. Only landmark numbers are used; no image leaves the browser.
+import { confidenceBand, labelsFromIndexMap, resample, toFloat32, topK } from "./asl_islr.js";
+import { assetUrl } from "./paths.js";
 
 export async function loadAslLabels(aslSpec, url = assetUrl("models/asl/sign_to_prediction_index_map.json")) {
   const response = await fetch(url);
@@ -16,28 +13,6 @@ export async function loadAslLabels(aslSpec, url = assetUrl("models/asl/sign_to_
 function finish(scoresOrTop, labels, aslSpec, extra) {
   const top = Array.isArray(scoresOrTop) && typeof scoresOrTop[0] === "number" ? topK(scoresOrTop, labels, 5, aslSpec) : scoresOrTop;
   return { top, band: confidenceBand(top[0]?.probability ?? 0, aslSpec), ...extra };
-}
-
-export async function createServerAsl({ aslSpec, labels, api = API_BASE }) {
-  const response = await fetch(`${api}/asl/status`);
-  if (!response.ok) throw new Error(`server ASL status ${response.status}`);
-  const status = await response.json();
-  if (!status.available) throw new Error(status.reason || "the server cannot run the ASL model");
-  if (status.feature_version !== aslSpec.feature_version) throw new Error(`the server uses ASL feature version ${status.feature_version}`);
-  return {
-    kind: "server",
-    info: { runtime: `local server (${status.runtime})`, frames: null, ...status },
-    async scores(sequence) {
-      const reply = await fetch(`${api}/asl/predict`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ frames: sequenceForJson(sequence), scores: true }) });
-      if (!reply.ok) throw new Error((await reply.json().catch(() => ({}))).detail || `server ASL predict ${reply.status}`);
-      return reply.json();
-    },
-    async predict(sequence) {
-      const body = await this.scores(sequence);
-      return finish(body.top, labels, aslSpec, { ms: body.ms, frames: sequence.length, runtime: "server" });
-    },
-    close() {},
-  };
 }
 
 export function workerChannel(worker) {
@@ -100,18 +75,15 @@ export async function createBrowserAsl({ aslSpec, labels, useWorker = true, mode
   };
 }
 
-// "auto": the server when it is running, otherwise the browser (worker first, then the page).
-export async function createAslRecognizer({ aslSpec, labels, prefer = "auto", api = API_BASE }) {
+// The worker first, then the page thread.
+export async function createAslRecognizer({ aslSpec, labels }) {
   const errors = [];
-  const serverPossible = HAS_SERVER && api !== "none";
-  const attempts = prefer === "browser" || !serverPossible ? ["worker", "page"] : prefer === "server" ? ["server"] : ["server", "worker", "page"];
-  for (const attempt of attempts) {
+  for (const useWorker of [true, false]) {
     try {
-      if (attempt === "server") return await createServerAsl({ aslSpec, labels, api });
-      return await createBrowserAsl({ aslSpec, labels, useWorker: attempt === "worker" });
+      return await createBrowserAsl({ aslSpec, labels, useWorker });
     } catch (error) {
-      errors.push(`${attempt}: ${error.message || error}`);
+      errors.push(`${useWorker ? "worker" : "page"}: ${error.message || error}`);
     }
   }
-  throw new Error(`ASL mode could not start (${errors.join("; ")})`);
+  throw new Error(`The ASL model could not start (${errors.join("; ")})`);
 }
