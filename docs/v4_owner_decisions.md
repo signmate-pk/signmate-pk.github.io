@@ -12,6 +12,19 @@ chosen; nothing here was decided by the agent.
 | 5 | Timing | **The switch is OK any time after the owner replies "release"** (Stage 7 gate). No fixed date. The PSL site stays live until the Stage 8 merge. |
 | 6 | Devices for the budgets | **Owner will name the laptop (with browser) and the Android phone.** Not given yet; needed from Stage 3. |
 
+## Later the same morning (2026-11-27, 10:26)
+
+| # | Question | Answer |
+|---|---|---|
+| 7 | Apps and offline | **"Remove offline copy. There should be only the website, not an app."** Then, asked about the browser cache: **remove offline use too.** So: no Windows offline copy, no installable web app, no service worker, no Flutter phone app, no desktop app. The site needs internet. (CLAUDE.md 10.7) |
+| 8 | Pages | Owner asked for the agent's recommendation. Recommended and adopted: **two plain website pages**: the project page at `/` and the translator at `/translate/`, opened from a "Translate" button. Old `/app.html` links forward to `/translate/`. Reason: the home page stays fast and complete without JavaScript, and the camera code loads only when someone wants to translate. The owner may still choose one page. |
+
+What these change in `docs/prompts/master-v4-asl.md`: every "works offline after the first visit" goal and
+budget row (sections 1 and 7, Stage 6 "offline test", Stage 8 "offline after the first visit"), the
+service-worker model updates of section 4.3 (a new model now simply arrives with the next deploy), the
+"offline save" setting of section 8, and the reuse of `offline.js`, `public/sw.js`, the precache list and
+`npm run build:shared` in section 0 no longer apply.
+
 GitHub: the owner allowed this session to push to `signmate-pk/signmate-pk.github.io`, on the branch
 `v4/asl` only. Tags and releases cannot be pushed from the agent's workspace (HTTP 403 on 2026-11-27), so
 the archive tag and release are owner steps (`docs/HOW_TO_ARCHIVE_PSL.md`).

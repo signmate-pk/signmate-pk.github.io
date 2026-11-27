@@ -1,5 +1,9 @@
 # SignMate — Master Prompt v4: ASL-only, two-way, real-time
 
+> **Owner amendments of 2026-11-27 (read first):** website only: no app, no offline copy, no service worker,
+> no offline use; the translator lives at `/translate/` (CLAUDE.md 10.7, `docs/v4_owner_decisions.md` items
+> 7-8). Where this file asks for offline use, an installable app or `npm run build:shared`, that no longer applies.
+
 Save this file as `docs/prompts/master-v4-asl.md`. Start a coding-agent session on the GitHub repository
 **`signmate-pk/signmate-pk.github.io`** (give it push access) and paste:
 

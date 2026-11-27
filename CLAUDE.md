@@ -126,3 +126,8 @@ The owner's decisions that go with it are in `docs/v4_owner_decisions.md`.
 6. **Baseline protection** (9.1, unchanged). The ISLR 1st-place model is the baseline. A new model replaces it
    only with a measured, side-by-side improvement on the same frozen, signer-independent test sets, without
    breaking the latency budget.
+7. **Website only** (owner, 2026-11-27). SignMate is a website and nothing else: no installable app (no web
+   app manifest, no install button), no offline copy, no service worker or offline cache, no phone app and no
+   desktop app. Section 5's "work with no network after install" no longer applies: the website needs
+   internet. Recognition still runs in the visitor's own browser and no camera frame leaves the device.
+   The project page is at `/` and the translator is a page of the same website at `/translate/`.
