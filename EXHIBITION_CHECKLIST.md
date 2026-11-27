@@ -5,7 +5,7 @@ offline copy on a USB stick as a backup. The 30-second script is in README.md ("
 
 ## Once, at home (on Wi-Fi)
 1. Windows: Settings > Privacy & security > Camera: camera access on.
-2. Open Chrome or Edge (use only that one) at https://signmate-pk.github.io/ and press **Turn on camera**.
+2. Open Chrome or Edge (use only that one) at https://signmate-pk.github.io/app.html and press **Turn on camera**.
 3. More > **Save for offline use** until it says "Saved: works offline". Optional: **Install as an app**.
 4. Wi-Fi off, browser closed and reopened: the page, camera and **Guided tour** still work.
 5. Put the offline copy (`npm run build:shared`, or the v3.0.0 release zip) on a USB stick and test it.

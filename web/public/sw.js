@@ -51,7 +51,9 @@ self.addEventListener("fetch", (event) => {
         if (response.ok) cache.put(request, response.clone());
         return response;
       } catch {
-        return (await cache.match(request)) || (await cache.match(scopeUrl("index.html"))) || Response.error();
+        // Offline: the cached copy of this page, else the app (app.html) or the project page (index.html).
+        const fallback = url.pathname.endsWith("/app.html") ? "app.html" : "index.html";
+        return (await cache.match(request, { ignoreSearch: true })) || (await cache.match(scopeUrl(fallback))) || Response.error();
       }
     })());
     return;

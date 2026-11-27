@@ -37,7 +37,7 @@ const CONSENT_KEY = "signbridge_mediapipe_metrics_consent"; // same key as v3: r
 const ONBOARD_KEY = "signmate_onboarded_v1";
 const LANG_KEY = "signmate_lang";
 const SETTINGS_KEY = "signmate_settings_v1";
-const DEFAULT_SETTINGS = { voice: true, rate: 0.95, pauseMs: 1200, learn: true, devHud: false };
+const DEFAULT_SETTINGS = { voice: true, rate: 0.95, pauseMs: 1200, learn: true, devHud: false, largeText: false };
 const TABS = [["words", "hand", "tabWords"], ["sentences", "sentence", "tabSentences"], ["reply", "reply", "tabReply"], ["more", "more", "tabMore"]];
 const MORE_ROUTES = new Set(["more", "about", "dictionary", "asl", "report", "helper", "phrases", "settings", "credits", "whats-new", "teach"]);
 
@@ -67,6 +67,9 @@ export default function App() {
   const [installEvent, setInstallEvent] = useState(null);
   const [presenting, setPresenting] = useState(false);
   const [devHud, setDevHud] = useState(() => new URLSearchParams(window.location.search).has("debug") || settings.devHud);
+  // Large text: the Settings switch, or ?large=1 for this visit (the project page's demo offers it).
+  const [largeFromUrl] = useState(() => new URLSearchParams(window.location.search).has("large"));
+  const largeText = settings.largeText || largeFromUrl;
   const personalRef = useRef(null);
   const [personalCount, setPersonalCount] = useState(0);
   const pendingAsl = useRef(null);
@@ -230,7 +233,7 @@ export default function App() {
   else if (route === "helper") content = <div className="screen legacy">{back}<Suspense fallback={fallback}><HelperChat vocabulary={vocabulary} pslClasses={bundle.manifest?.classes || []} /></Suspense></div>;
   else content = <WordsScreen bundle={bundle} lang={lang} cameraWanted={cameraWanted} setCameraWanted={wantCamera} onEngine={setEngine} clips={clips} onConfirm={confirmWord} onSpeakWord={(entry) => say(wordLines(withRoman(entry)))} />;
 
-  return <div className={`app ${presenting ? "presenting" : ""}`} dir={ui === "ur" ? "rtl" : "ltr"}>
+  return <div className={`app ${presenting ? "presenting" : ""} ${largeText ? "large-text" : ""}`} dir={ui === "ur" ? "rtl" : "ltr"}>
     <a className="skip" href="#main">Skip to content</a>
     <header className="topbar">
       <a className="brand" href="#/words" aria-label="SignMate home"><BrandMark size={34} /><span><b>SignMate</b><small>{route === "asl" ? "American Sign Language mode" : ui === "ur" ? "پاکستانی اشاروں کی زبان" : "Pakistan Sign Language"}</small></span><span className={`sl-tag ${route === "asl" ? "asl" : ""}`} title="Active sign language">{route === "asl" ? "ASL" : "PSL"}</span></a>

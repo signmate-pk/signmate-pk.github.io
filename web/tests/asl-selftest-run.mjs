@@ -64,9 +64,9 @@ try {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  // ASL mode lives under More → ASL mode (#/asl) in the product UI. On a first visit the camera button
+  // ASL mode lives under More → ASL mode (app.html#/asl) in the product UI. On a first visit the camera button
   // opens the welcome card with the privacy notice; its "Turn on camera" starts the ASL camera.
-  await page.goto(`${base}#/asl`);
+  await page.goto(`${base}app.html#/asl`);
   const welcome = page.locator(".onboarding");
   await welcome.waitFor({ timeout: 15_000 }).catch(() => null);
   if (await welcome.count()) await welcome.getByRole("button", { name: /Turn on camera/ }).click();
@@ -97,7 +97,7 @@ try {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(`${base}#/words`);
+  await page.goto(`${base}app.html#/words`);
   const welcome = page.locator(".onboarding");
   await welcome.waitFor({ timeout: 15_000 });
   await welcome.getByRole("button", { name: /Turn on camera/ }).click();

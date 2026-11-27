@@ -125,15 +125,20 @@ jobs:
           python -m http.server 4173 --directory web/dist > ci-results/lighthouse-server.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:4173/ && break; sleep 2; done  # wait until it answers
           export CHROME_PATH="$(cd web && node -e "console.log(require('playwright').chromium.executablePath())")"
-          for preset in desktop mobile; do
-            extra=""; [ "$preset" = desktop ] && extra="--preset=desktop"
-            npx --yes lighthouse@12 http://127.0.0.1:4173/ $extra --only-categories=performance,accessibility,best-practices \
-              --output=json --output-path="ci-results/lighthouse-$preset.json" --chrome-flags="--headless=new --no-sandbox" --quiet
+          # Both pages: the project page (/) and the app (/app.html). Budgets (docs/WEBSITE.md): mobile performance
+          # >= 90, accessibility 100, best practices >= 95, SEO 100.
+          for page in "" "app.html"; do
+            for preset in desktop mobile; do
+              extra=""; [ "$preset" = desktop ] && extra="--preset=desktop"
+              name="$preset"; [ -n "$page" ] && name="app-$preset"
+              npx --yes lighthouse@12 "http://127.0.0.1:4173/$page" $extra --only-categories=performance,accessibility,best-practices,seo \
+                --output=json --output-path="ci-results/lighthouse-$name.json" --chrome-flags="--headless=new --no-sandbox" --quiet
+            done
           done
           python - <<'PY'
           import json
           out = {}
-          for preset in ("desktop", "mobile"):
+          for preset in ("desktop", "mobile", "app-desktop", "app-mobile"):
               d = json.load(open(f"ci-results/lighthouse-{preset}.json"))
               out[preset] = {k: (None if v["score"] is None else round(v["score"] * 100)) for k, v in d["categories"].items()}
               lcp = d["audits"]["largest-contentful-paint"].get("numericValue")
@@ -143,7 +148,7 @@ jobs:
               out[preset]["lcp_error"] = d["audits"]["largest-contentful-paint"].get("errorMessage")
               out[preset]["lighthouse"] = d["lighthouseVersion"]
               failing = []
-              for cat in ("accessibility", "best-practices"):
+              for cat in ("accessibility", "best-practices", "seo"):
                   for ref in d["categories"][cat]["auditRefs"]:
                       audit = d["audits"][ref["id"]]
                       if ref.get("weight", 0) > 0 and audit.get("score") is not None and audit["score"] < 1:

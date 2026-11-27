@@ -43,10 +43,14 @@ export default function Icon({ name, size = 20, className = "" }) {
 }
 
 export function BrandMark({ size = 34 }) {
-  // Two open hands meeting: SignMate's mark. Gradient from the theme.
-  return <svg className="brand-mark" width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-    <defs><linearGradient id="sm-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="var(--indigo)" /><stop offset="1" stopColor="var(--pink)" /></linearGradient></defs>
-    <rect width="40" height="40" rx="12" fill="url(#sm-grad)" />
-    <path d="M13 27c-2.2-1.6-3.4-4-3.4-6.6V14a1.4 1.4 0 0 1 2.8 0v4.2M12.4 18V11a1.4 1.4 0 0 1 2.8 0v6.5M15.2 12.5a1.4 1.4 0 0 1 2.8 0V18M27 27c2.2-1.6 3.4-4 3.4-6.6V14a1.4 1.4 0 0 0-2.8 0v4.2M27.6 18V11a1.4 1.4 0 0 0-2.8 0v6.5M24.8 12.5a1.4 1.4 0 0 0-2.8 0V18M18 22.5c.6 1.2 1.2 1.8 2 1.8s1.4-.6 2-1.8" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  // SignMate's mark (2026-11-27): an open hand inside a speech bubble, on the brand ink. Same drawing as
+  // public/icon.svg and the project page's logo.
+  return <svg className="brand-mark" width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <rect width="64" height="64" rx="14" fill="#0d0b1c" />
+    <path fill="#3ddc97" d="M15 9h34a9 9 0 0 1 9 9v22a9 9 0 0 1-9 9H29l-11.5 9.2a1 1 0 0 1-1.6-.8V49H15a9 9 0 0 1-9-9V18a9 9 0 0 1 9-9z" />
+    <g fill="#0d0b1c" stroke="#0d0b1c" strokeLinecap="round" strokeLinejoin="round">
+      <path fill="none" strokeWidth="4.6" d="M26.2 29V18.2M31.6 28V15.6M37 28.4V17.2M42.2 30.4v-8M26.2 29.5c-1.6-2.2-3.3-3.7-5-3.6-1.6.2-2.2 1.6-1.2 3.2l4.6 7c1.9 2.9 4.6 4.6 8.2 4.6h2.6c4.3 0 7.8-3.5 7.8-7.8v-3.2" />
+      <path strokeWidth="1" d="M24.2 27h17.8v6.2c0 3.6-2.9 6.6-6.6 6.6h-2.8c-3 0-5.4-1.4-7-3.8l-3.4-5.2z" />
+    </g>
   </svg>;
 }

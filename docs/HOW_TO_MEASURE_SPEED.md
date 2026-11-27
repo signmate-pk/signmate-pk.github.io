@@ -19,7 +19,7 @@ model** (Settings > About phone). Send everything to Claude in this chat.
 6. Wait until the top line starts with **Done.** (10-60 seconds).
 7. Press **Ctrl+A**, then **Ctrl+C**. Open **Notepad**, press **Ctrl+V**, and save the file as
    `laptop-v3-selftest.txt`. Attach it in the chat.
-8. **Camera check (the Stage 0 gate):** go back to `http://localhost:8765/`, click **ASL** at the
+8. **Camera check (the Stage 0 gate):** go back to `http://localhost:8765/app.html`, click **ASL** at the
    top, then **Start ASL camera**, and allow the camera. Sign any ASL word you know (if you know
    none, watch a video of an everyday ASL word such as "hello" or "thank you" in an online ASL
    dictionary first). Lower your hands when you finish. Take a screenshot (**Windows key + Shift + S**)

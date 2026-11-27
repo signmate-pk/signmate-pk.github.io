@@ -346,6 +346,20 @@ details.tech code { display: block; white-space: pre-wrap; word-break: break-wor
 .dev-hud small { font-size: 13px; color: #a8a3d6; }
 
 /* ------------------------------------------------------------------ presentation mode */
+/* Large text (Settings, or ?large=1 from the project page's demo): the words that carry the conversation get
+   much bigger; layout and the camera stage are unchanged, so the hand overlay stays aligned. */
+.large-text main { font-size: 19px; }
+.large-text .word-chip strong, .large-text .word-chip strong.urdu { font-size: 44px; }
+.large-text .sentence-text, .large-text .sentence-text.urdu { font-size: 34px; }
+.large-text .caption p { font-size: 28px; }
+.large-text .stage-status { font-size: 20px; }
+.large-text .result-card .result-title { font-size: 21px; }
+.large-text .sign-card strong { font-size: 22px; }
+.large-text .sign-card strong.urdu { font-size: 25px; }
+.large-text .btn { font-size: 19px; min-height: 54px; }
+.large-text .tray-chip { font-size: 21px; }
+.large-text .screen-title { font-size: 32px; }
+
 .presenting { --tabbar: 0px; }
 .presenting .tabbar { display: none; }
 .presenting .stage { height: min(70vh, 820px); }

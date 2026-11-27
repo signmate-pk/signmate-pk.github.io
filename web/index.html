@@ -1,36 +1,494 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f4fb" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0d0b1c" media="(prefers-color-scheme: dark)" />
+    <title>SignMate — Pakistan Sign Language to Urdu and English speech, on your device</title>
+    <meta name="description" content="SignMate translates Pakistan Sign Language (PSL) into spoken Urdu and English in your browser. Sign, confirm, speak. Free, works offline, no account; camera video never leaves your device. Live demo, all 69 signs, real test results and limitations." />
+    <link rel="canonical" href="https://signmate-pk.github.io/" />
+    <meta name="theme-color" content="#0d0b1c" />
+    <meta name="color-scheme" content="dark" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="icon" href="./favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <meta name="description" content="SignMate turns Pakistan Sign Language into Urdu and English on your own device. Sign, confirm, speak; reply in large type with real PSL videos. Free, offline-capable, no account." />
-    <meta property="og:title" content="SignMate: talk face to face in Pakistan Sign Language" />
-    <meta property="og:description" content="Sign in PSL and it speaks in Urdu or English, after you confirm. Runs in your browser; your camera video never leaves your device." />
-    <meta property="og:url" content="https://signmate-pk.github.io/" />
     <meta property="og:type" content="website" />
-    <title>SignMate — Pakistan Sign Language to Urdu and English</title>
-    <style>
-      /* First paint before the app script runs: the same colours and layout as the app, so nothing jumps. */
-      body{margin:0;background:#f5f4fb;color:#16142c;font:16px/1.55 Manrope,Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-      @media (prefers-color-scheme:dark){body{background:#0d0b1c;color:#f3f1ff}}
-      .boot{min-height:100vh;display:grid;grid-template-rows:auto 1fr}
-      .boot header{display:flex;align-items:center;gap:10px;padding:12px 16px}
-      .boot i{width:34px;height:34px;border-radius:12px;background:linear-gradient(118deg,#4f46e5,#8b3fd9 52%,#d6337a)}
-      .boot main{padding:14px}
-      .boot .stage{height:min(62vh,620px);min-height:300px;border-radius:26px;background:radial-gradient(120% 80% at 50% 0%,#2a2260,#151233 45%,#0f0d22);display:grid;place-items:center;color:#f6f4ff;text-align:center;padding:20px}
-      .boot h1{font-size:24px;margin:0;letter-spacing:-.02em}
-    </style>
+    <meta property="og:site_name" content="SignMate" />
+    <meta property="og:url" content="https://signmate-pk.github.io/" />
+    <meta property="og:title" content="SignMate: talk face to face in Pakistan Sign Language" />
+    <meta property="og:description" content="Sign in PSL; confirm the word; SignMate speaks it in Urdu or English. Runs in your browser, works offline, and your camera video never leaves your device." />
+    <meta property="og:image" content="https://signmate-pk.github.io/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="SignMate logo and the words Talk face to face, next to a phone showing the sign Goodbye recognised and a button reading Yes, speak it." />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:locale:alternate" content="ur_PK" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Old links into the app (/#/tour, /#/words, ?debug=1) now live at app.html: forward them, keeping the route.
+      (function () {
+        var h = location.hash, s = location.search;
+        if (/^#\/[a-z]/i.test(h) || /[?&]debug\b/.test(s)) { location.replace("app.html" + s + h); return; }
+        document.documentElement.className += " js";
+      })();
+    </script>
+    <link rel="preload" as="image" href="./media/tour-poster.webp" type="image/webp" />
+    <link rel="stylesheet" href="/src/landing/landing.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "SignMate",
+        "url": "https://signmate-pk.github.io/",
+        "applicationCategory": "Accessibility",
+        "operatingSystem": "Any modern web browser",
+        "isAccessibleForFree": true,
+        "inLanguage": ["en", "ur"],
+        "description": "Translates Pakistan Sign Language into Urdu and English speech, on the user's own device, after the signer confirms each word.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "PKR" },
+        "codeRepository": "https://github.com/signmate-pk/signmate-pk.github.io"
+      }
+    </script>
   </head>
   <body>
-    <div id="root">
-      <div class="boot"><header><i></i><strong>SignMate</strong></header><main><div class="stage"><div><h1>Talk face to face.</h1><p>Pakistan Sign Language to Urdu and English, on this device.</p></div></div></main></div>
-    </div>
-    <noscript>SignMate needs JavaScript to read signs on your device.</noscript>
-    <script type="module" src="/src/main.jsx"></script>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="#home">
+          <img src="./icon.svg" alt="" width="40" height="40" />
+          <span class="brand-name">SignMate</span>
+          <span class="visually-hidden">, home</span>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" hidden>
+          <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+          <span class="nav-toggle-label">Menu</span>
+        </button>
+        <nav id="site-nav" class="site-nav" aria-label="Main">
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#demo">Live demo</a></li>
+            <li><a href="#signs">Sign library</a></li>
+            <li><a href="#technology">Technology</a></li>
+            <li><a href="#results">Results</a></li>
+            <li><a href="#validation">Validation &amp; roadmap</a></li>
+            <li><a href="#team">Team</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <!-- ============================================================ 1 · Home -->
+      <section id="home" class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero-grid">
+          <div class="hero-text">
+            <p class="eyebrow">Pakistan Sign Language → Urdu and English speech</p>
+            <h1 id="hero-title">Talk face to face.</h1>
+            <p class="hero-ur" lang="ur" dir="rtl">آمنے سامنے بات کیجیے۔</p>
+            <p class="lead">SignMate watches a sign through your camera, shows you the word, and once you confirm it, says it out loud in Urdu or English. It all runs inside your browser.</p>
+            <div class="cta-row">
+              <a class="btn btn-primary btn-lg" href="#demo">Try the live demo</a>
+              <a class="btn btn-ghost btn-lg" href="#demo-video">
+                <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+                Watch 60-second demo
+              </a>
+            </div>
+            <ul class="facts" aria-label="Key facts">
+              <li>Free</li>
+              <li>Works offline after the first visit</li>
+              <li>No account</li>
+              <li>Camera video never leaves your device</li>
+            </ul>
+            <p class="status-line"><strong>Early prototype.</strong> Recognises <!--@fact:signs--> PSL signs today. Every answer is a suggestion you confirm, and the signs are <span class="badge">not yet validated by Deaf signers</span>. <a href="#results">See the real results</a>.</p>
+          </div>
+          <figure class="hero-media">
+            <div class="phone">
+              <video class="hero-video" width="390" height="844" muted loop playsinline preload="none" controls poster="./media/tour-poster.webp" aria-describedby="hero-video-caption">
+                <source src="./media/tour-loop.mp4" type="video/mp4" />
+                <track kind="captions" srclang="en" label="English" src="./media/tour-loop.en.vtt" default />
+                <track kind="captions" srclang="ur" label="اردو" src="./media/tour-loop.ur.vtt" />
+              </video>
+            </div>
+            <figcaption id="hero-video-caption">A recorded PSL sign plays as hand points. SignMate suggests <b class="nowrap">Goodbye · <span lang="ur" dir="rtl">خدا حافظ</span></b> and speaks only after <b>Yes, speak it</b>. Captured from the app's guided tour; no sound.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2 · How it works -->
+      <section id="how" class="section" aria-labelledby="how-title">
+        <div class="wrap">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-title">Show. Confirm. Speak.</h2>
+          <p class="section-lead">Three steps, and the signer stays in control: SignMate never speaks a word that nobody confirmed.</p>
+          <ol class="steps">
+            <li class="step">
+              <figure>
+                <img src="./media/how-1-show.webp" srcset="./media/how-1-show.webp 390w, ./media/how-1-show@2x.webp 780w" sizes="(min-width: 960px) 300px, 70vw" width="390" height="844" loading="lazy" decoding="async" alt="Phone screen: a dark stage shows a moving hand drawn as 21 connected points, with the label Signing." />
+              </figure>
+              <div class="step-text">
+                <p class="step-num" aria-hidden="true">1</p>
+                <h3>Show the sign</h3>
+                <p>Sign one word in front of the camera. MediaPipe finds 21 points on each hand in every frame, on your device. When your hands come down, SignMate knows the sign has ended.</p>
+              </div>
+            </li>
+            <li class="step">
+              <figure>
+                <img src="./media/how-2-confirm.webp" srcset="./media/how-2-confirm.webp 390w, ./media/how-2-confirm@2x.webp 780w" sizes="(min-width: 960px) 300px, 70vw" width="390" height="844" loading="lazy" decoding="async" alt="Phone screen: a card reads Goodbye with the Urdu خدا حافظ underneath and a button: Yes, speak it." />
+              </figure>
+              <div class="step-text">
+                <p class="step-num" aria-hidden="true">2</p>
+                <h3>Confirm the word</h3>
+                <p>SignMate suggests a word in English and Urdu. If it is not sure, it shows its top three and asks “Which one did you sign?”. If it cannot tell, it says so. Nothing is spoken until you tap <b>Yes</b>.</p>
+              </div>
+            </li>
+            <li class="step">
+              <figure>
+                <img src="./media/how-3-speak.webp" srcset="./media/how-3-speak.webp 390w, ./media/how-3-speak@2x.webp 780w" sizes="(min-width: 960px) 300px, 70vw" width="390" height="844" loading="lazy" decoding="async" alt="Phone screen: the Yes, speak it button is pressed and a caption bar at the bottom shows the spoken word Goodbye with a speaker icon." />
+              </figure>
+              <div class="step-text">
+                <p class="step-num" aria-hidden="true">3</p>
+                <h3>Speak, and get a reply</h3>
+                <p>SignMate says the word aloud in Urdu, Roman Urdu or English, and always shows it as text too. Words build into a sentence. The hearing person types a reply, which appears in large type, with real PSL videos for the words SignMate knows.</p>
+              </div>
+            </li>
+          </ol>
+          <p class="note">These screens come from SignMate's guided tour, which replays a real recorded sign from the SignSpeak dataset (hand points only, no video) so it works without a camera. The answer on screen is the shipped model's saved answer for that recording.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3 · Live demo -->
+      <section id="demo" class="section section-alt" aria-labelledby="demo-title">
+        <div class="wrap">
+          <p class="eyebrow">Live demo</p>
+          <h2 id="demo-title">Try the real recogniser</h2>
+          <div class="demo-grid">
+            <div class="demo-info">
+              <p class="section-lead">This is the same code as the app. Nothing loads until you press <b>Start</b>. Then your browser downloads the hand tracker (<!--@fact:hand-model-size-->), the PSL model (<!--@fact:model-size-->) and their runtimes, once. Use Wi-Fi the first time.</p>
+              <h3>About the camera</h3>
+              <ul class="ticks">
+                <li>Your browser will ask to use the camera. Choose <b>Allow</b>; SignMate cannot work without it.</li>
+                <li><b>The video stays on this device.</b> SignMate turns each frame into hand points in memory and never uploads, records or stores the picture. There is no server that could receive it.</li>
+                <li>You can stop the camera at any time with the Stop button, or by closing the tab.</li>
+                <li>If you would rather not use a camera, the guided tour replays recorded signs instead.</li>
+              </ul>
+              <h3>Tips for a good result</h3>
+              <ul class="ticks">
+                <li>Face a light source, with both hands and your shoulders in view, about an arm's length or more from the camera.</li>
+                <li>Start with your hands down. Raise them, make one sign, then lower them again.</li>
+                <li>Good signs to start with: Assalam-o-alaikum, Hello, Thank you, Goodbye, Water, Help. The <a href="#signs">sign library</a> lists all <!--@fact:signs-->.</li>
+              </ul>
+            </div>
+            <div class="demo-panel" id="demo-panel">
+              <div class="demo-actions">
+                <a class="btn btn-primary btn-lg" id="demo-start" href="app.html#/words">
+                  <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h7A2.5 2.5 0 0 1 16 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 15.5zM16 10.5l4-2.5v8l-4-2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                  Start the live demo
+                </a>
+                <a class="btn btn-ghost" href="app.html#/tour">Guided tour (no camera)</a>
+              </div>
+              <div class="demo-options js-only">
+                <label class="switch"><input type="checkbox" id="demo-large" /> <span>Large text in the demo</span></label>
+              </div>
+              <p class="demo-hint js-only">On a phone, the demo opens full screen. On a larger screen it opens right here.</p>
+              <div id="demo-status" class="demo-status" role="status" aria-live="polite"></div>
+              <div id="demo-fallback" class="demo-fallback" hidden tabindex="-1">
+                <h3 id="demo-fallback-title">The camera is not available</h3>
+                <p id="demo-fallback-reason"></p>
+                <p><strong>To allow the camera:</strong> tap the camera or lock icon next to the address, choose <b>Allow</b> for Camera, then reload. On iPhone: Settings → Apps → Safari → Camera → Allow.</p>
+                <p>Meanwhile you can <a href="app.html#/tour">take the guided tour</a>, which needs no camera, or <a href="#demo-video">watch the demo video</a>.</p>
+              </div>
+              <div id="demo-frame" class="demo-frame" hidden></div>
+              <noscript><p class="demo-noscript">The live demo runs in your browser, so it needs JavaScript. Turn JavaScript on in your browser's settings for this site and reload, or <a href="#demo-video">watch the demo video</a>.</p></noscript>
+            </div>
+          </div>
+
+          <div class="demo-video" id="demo-video" tabindex="-1">
+            <h3>Watch the 60-second demo</h3>
+            <div class="todo-box" role="note">
+              <p class="todo">[TODO: 60-second demo video]</p>
+              <p>Record it with the shot list in <code>docs/WEBSITE.md</code> (section “60-second demo video”), then add <code>web/public/media/demo-60s.mp4</code> with English and Urdu captions (<code>demo-60s.en.vtt</code>, <code>demo-60s.ur.vtt</code>) and replace this box with the video element prepared in the page source.</p>
+              <!-- Ready for the real video (keep both caption tracks; nothing may be conveyed by sound alone):
+              <video controls preload="none" playsinline width="1280" height="720" poster="./media/demo-60s-poster.webp">
+                <source src="./media/demo-60s.mp4" type="video/mp4" />
+                <track kind="captions" srclang="en" label="English" src="./media/demo-60s.en.vtt" default />
+                <track kind="captions" srclang="ur" label="اردو" src="./media/demo-60s.ur.vtt" />
+              </video> -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4 · Sign library -->
+      <section id="signs" class="section" aria-labelledby="signs-title">
+        <div class="wrap">
+          <p class="eyebrow">Sign library</p>
+          <h2 id="signs-title">All <!--@fact:signs--> signs SignMate knows</h2>
+          <p class="section-lead">This list is read from the model's own labels file (<code>models/psl/manifest.json</code>) when the site is built, so it is exactly what the camera can recognise. <!--@fact:signs-one--> are one-handed and <!--@fact:signs-two--> two-handed. Every sign is “Suggested, please confirm” (Tier B). The model also has a 70th class, “Not a sign”, so resting hands are ignored. It is never offered as an answer.</p>
+          <div class="library-tools js-only">
+            <label class="search" for="sign-search">
+              <span class="search-label">Search signs in English, Urdu or Roman Urdu</span>
+              <input id="sign-search" type="search" autocomplete="off" spellcheck="false" aria-controls="sign-list" />
+            </label>
+            <div class="filters" role="group" aria-label="Show">
+              <button type="button" data-filter="all" aria-pressed="true">All</button>
+              <button type="button" data-filter="talk" aria-pressed="false">Everyday talk</button>
+              <button type="button" data-filter="things" aria-pressed="false">Things &amp; places</button>
+              <button type="button" data-filter="animals" aria-pressed="false">Animals</button>
+              <button type="button" data-filter="two" aria-pressed="false">Two hands</button>
+              <button type="button" data-filter="video" aria-pressed="false">With video</button>
+            </div>
+            <p id="sign-count" class="sign-count" role="status" aria-live="polite"></p>
+          </div>
+          <!--@block:sign-library-->
+          <p class="note">Reference videos: <!--@fact:signs-video--> signs have a clip from the SLT community PSL dictionary (CC BY 4.0, one performer, not yet checked by Deaf signers; a dictionary entry may be a regional variant). <!--@fact:signs-dictionary--> signs link to their entry in the national PSL dictionary at psl.org.pk. SignMate never makes up how a sign looks: where no licensed video exists, it says so. Urdu words and Roman Urdu are translations of the English word, awaiting review by an Urdu editor.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5 · Technology -->
+      <section id="technology" class="section section-alt" aria-labelledby="tech-title">
+        <div class="wrap">
+          <p class="eyebrow">Technology</p>
+          <h2 id="tech-title">From camera to voice, on your device</h2>
+          <figure class="pipeline-figure">
+            <figcaption class="visually-hidden">The SignMate pipeline, in six stages from camera to speech.</figcaption>
+            <ol class="pipeline">
+              <li><h3>Camera</h3><p>Frames stay in the browser. One pass per new camera frame.</p></li>
+              <li><h3>MediaPipe landmarks</h3><p>21 points on each hand, both hands, every frame (WebAssembly; graphics chip if it is faster, otherwise the processor).</p></li>
+              <li><h3>Features</h3><p>The sign is cut where the hands rise and fall, resampled to <!--@fact:model-frames--> frames, and measured relative to the wrist and hand size.</p></li>
+              <li><h3>Classifier</h3><p><!--@fact:model-precision--> <!--@fact:model-arch--> model, <!--@fact:model-size-->, in a background thread (LiteRT.js). <!--@fact:classes--> outputs with calibrated probabilities.</p></li>
+              <li><h3>Confirmation</h3><p>Sure: shown large. Unsure: top three to pick from. Unclear or “Not a sign”: a gentle hint. Never spoken automatically.</p></li>
+              <li><h3>Urdu / English speech</h3><p>The device's own voices (Web Speech API). With no Urdu voice it reads Roman Urdu and always shows the text.</p></li>
+            </ol>
+          </figure>
+
+          <div class="tech-grid">
+            <div>
+              <h3>Why on the device</h3>
+              <ul class="ticks">
+                <li><b>Privacy.</b> Signing is personal, and often about health or family. The camera picture never leaves the phone, because there is no server to send it to.</li>
+                <li><b>Works offline.</b> After one visit, or “Save for offline use”, it works with no signal: in a clinic basement, on a bus, during an outage.</li>
+                <li><b>Free to run.</b> No server costs and no account, so nobody has to pay per translation.</li>
+                <li><b>No waiting on the network.</b> A sign is read in milliseconds on the device (see the measurements below).</li>
+              </ul>
+            </div>
+            <div>
+              <h3>The model</h3>
+              <dl class="facts-list">
+                <div><dt>Architecture</dt><dd><!--@fact:model-arch--> (motion over <!--@fact:model-frames--> frames of both hands)</dd></div>
+                <div><dt>Size</dt><dd><!--@fact:model-size--> (<!--@fact:model-bytes--> bytes), <!--@fact:model-precision--></dd></div>
+                <div><dt>Parameters</dt><dd><!--@fact:model-params--></dd></div>
+                <div><dt>Classes</dt><dd><!--@fact:signs--> signs + “Not a sign”</dd></div>
+                <div><dt>Calibration</dt><dd>temperature <!--@fact:model-temperature-->, mirror averaging for left-handed signers</dd></div>
+                <div><dt>Training data</dt><dd>SignSpeak PSL dataset, <!--@fact:train-samples--> usable samples (hand landmarks), trained on GitHub's servers</dd></div>
+                <div><dt>Version</dt><dd><!--@fact:model-version--> · SHA-256 <code><!--@fact:model-sha-->…</code></dd></div>
+              </dl>
+            </div>
+            <div>
+              <h3>Stack</h3>
+              <ul class="stack">
+                <li><b>MediaPipe Tasks Vision</b> 1.2.2: hand tracking</li>
+                <li><b>LiteRT.js</b> 2.6.0: runs the PSL model in a Web Worker</li>
+                <li><b>React</b> 19 and <b>Vite</b> 8: the app and this page</li>
+                <li><b>Web Speech API</b>: Urdu and English voices</li>
+                <li><b>Service worker</b>: offline use and “Save for offline use”</li>
+                <li><b>GitHub Actions</b>: training, tests and every build; <b>GitHub Pages</b>: hosting</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 id="speed">Speed, measured</h3>
+          <div class="table-scroll" tabindex="0" role="region" aria-labelledby="speed-caption">
+            <table class="data">
+              <caption id="speed-caption">Every timing names where and when it was measured. Nothing is estimated.</caption>
+              <thead><tr><th scope="col">What</th><th scope="col">Result</th><th scope="col">Where</th><th scope="col">Date</th></tr></thead>
+              <tbody>
+                <!--@block:speed-rows-->
+                <tr><th scope="row">From the end of a sign to the word on screen (live camera, the app)</th><td>638–846 ms</td><td>Claude's workspace: headless Chrome 153, 2 cores, no graphics chip; a fake camera playing PSL dictionary clips (reports/perf_audit_2026-11-26.md)</td><td>2026-11-26</td></tr>
+                <tr><th scope="row">Hand tracking per frame (live, after the automatic switch to the processor)</th><td>76–103 ms</td><td>same</td><td>2026-11-26</td></tr>
+                <tr><th scope="row">PSL model per sign, live</th><td>7–24 ms</td><td>same</td><td>2026-11-26</td></tr>
+                <tr><th scope="row">Tap “Turn on camera” → camera picture visible</th><td>432–711 ms</td><td>same</td><td>2026-11-26</td></tr>
+                <tr><th scope="row">Real phone and the exhibition laptop</th><td class="todo">[TODO: measure with docs/HOW_TO_MEASURE_SPEED.md]</td><td class="todo">[TODO: phone model, laptop model, browser]</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">The workspace computer is far slower than a mid-range phone with a working graphics chip, so treat those numbers as a slow-device floor.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6 · Results & limitations -->
+      <section id="results" class="section" aria-labelledby="results-title">
+        <div class="wrap">
+          <p class="eyebrow">Results &amp; limitations</p>
+          <h2 id="results-title">How well it works, honestly</h2>
+          <p class="section-lead">Two numbers matter, and they tell different stories. Both come from training run <!--@fact:run--> (commit <!--@fact:commit-->, <!--@fact:run-date-->). The matrix and tables below are rebuilt from that run's committed measurements by <code>tools/psl_results.py</code>, which checks that they add up.</p>
+          <div class="score-cards">
+            <div class="score-card">
+              <p class="score"><!--@fact:fair-top1--></p>
+              <p class="score-label">right first time on <!--@fact:fair-samples--> phone recordings the model never saw</p>
+              <p class="score-note"><b>Weaker test.</b> The dataset publishes no signer IDs, so the same people may be in training and test.</p>
+            </div>
+            <div class="score-card score-card-warn">
+              <p class="score"><!--@fact:solo-top1--></p>
+              <p class="score-label">right first time on one completely new signer (<!--@fact:solo-top1-count--> of <!--@fact:solo-samples--> clips); right sign in the top five: <!--@fact:solo-top5--></p>
+              <p class="score-note"><b>The honest real-world picture</b>, but only <!--@fact:solo-samples--> clips. This is why SignMate always asks before it speaks.</p>
+            </div>
+          </div>
+
+          <div class="table-scroll" tabindex="0" role="region" aria-label="All test results">
+            <!--@block:results-table-->
+          </div>
+
+          <h3 id="confusion">Confusion matrix (fair test)</h3>
+          <p>Each row is the sign that was made; each column is SignMate's answer. Green squares on the diagonal are right answers (brighter means a larger share of that sign). Amber diamonds are wrong answers. <!--@fact:fair-correct--> of <!--@fact:fair-samples--> answers are on the diagonal; the <!--@fact:fair-errors--> mistakes are listed underneath. Signs with no fair-test recordings (<!--@fact:not-measured-->) are left out; the phone recordings of Toothbrush and Toothpaste were labelled the wrong way round in the dataset.</p>
+          <figure class="matrix-figure">
+            <div class="table-scroll matrix-scroll" tabindex="0" role="region" aria-label="Confusion matrix, scrollable">
+              <!--@block:confusion-matrix-->
+            </div>
+            <figcaption>Hover or tap a cell for its count. <!--@fact:fair-signs--> signs × <!--@fact:fair-signs--> answers.</figcaption>
+          </figure>
+          <div class="two-col">
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Every wrong answer"><!--@block:confusion-errors--></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="One new signer, clip by clip"><!--@block:independent--></div>
+          </div>
+          <details class="more">
+            <summary>Per-sign results and confidence levels</summary>
+            <div class="two-col">
+              <div class="table-scroll" tabindex="0" role="region" aria-label="Per-sign results"><!--@block:per-sign--></div>
+              <div class="table-scroll" tabindex="0" role="region" aria-label="Confidence levels"><!--@block:speak-limits--><p class="note">Calibration error on the fair test: <!--@fact:calibration-error--> (0 is perfect). SignMate shows an answer as sure from 0.60 with a clear lead over the next guess, and asks for 0.75 for Help and Where, its two weakest signs.</p></div>
+            </div>
+          </details>
+
+          <h3 id="devices">Devices tested</h3>
+          <ul class="ticks">
+            <li>Claude's workspace: headless Chrome 153 on a 2-core Linux computer with no graphics chip (speed audit and guided tour, 26 Nov 2026).</li>
+            <li>GitHub Actions computers: Chromium 159 and Lighthouse 12.8.2, on every pull request (model parity in the browser: 6 of 6 recordings give the same top answer as Python).</li>
+            <li>The owner's Windows laptop: only the older ASL build was timed (20 Nov 2026).</li>
+            <li class="todo">[TODO: test results on a real Android phone, an iPhone and the exhibition laptop, with the model names]</li>
+          </ul>
+
+          <h3 id="limitations">Limitations</h3>
+          <ul class="limits">
+            <li><b>Only <!--@fact:signs--> signs, one at a time.</b> Many are objects and animals. SignMate does not follow continuous signing or PSL grammar yet, and it cannot finger-spell names.</li>
+            <li><b>Signer variety.</b> The training data comes from one dataset with no signer IDs. On one new signer the first answer was right <!--@fact:solo-top1-count--> times out of <!--@fact:solo-samples-->.</li>
+            <li><b>Dataset size.</b> <!--@fact:train-samples--> recordings in total, about 90 per sign; Come, Give and Want have only phone recordings and are not measured.</li>
+            <li><b>Lighting and framing.</b> Dim light, a bright window behind you, or hands leaving the picture make tracking fail. The app runs a short camera check and tells you what to fix.</li>
+            <li><b>Hands only.</b> The model reads the two hands, not the face or body, which carry meaning in PSL.</li>
+            <li><b>Not yet validated by Deaf signers.</b> No sign has a Deaf validator's sign-off. All <!--@fact:tier-b--> are Tier B (“Suggested, please confirm”) and <!--@fact:tier-a--> are Tier A.</li>
+            <li><b>Not an interpreter.</b> For medical, legal or emergency decisions, use a qualified PSL interpreter.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7 · Validation & roadmap -->
+      <section id="validation" class="section section-alt" aria-labelledby="validation-title">
+        <div class="wrap">
+          <p class="eyebrow">Validation &amp; roadmap</p>
+          <h2 id="validation-title">Built with Deaf signers, not just for them</h2>
+          <div class="two-col">
+            <div>
+              <h3>Where we are today</h3>
+              <dl class="facts-list">
+                <div><dt>Signs validated by Deaf signers</dt><dd>0 of <!--@fact:signs--> (badge: “<!--@fact:badge-->”)</dd></div>
+                <div><dt>Testing with Deaf users</dt><dd>Not started</dd></div>
+                <div><dt>Partner organisations</dt><dd>None yet. Outreach is planned (below); no organisation has agreed to anything.</dd></div>
+                <div><dt>Data consent</dt><dd>Public datasets with a licence recorded before use (<code>data/LICENSES.yaml</code>); the build refuses assets whose licence does not allow the use.</dd></div>
+              </dl>
+            </div>
+            <div>
+              <h3>Plan to test with Deaf signers and PSL teachers</h3>
+              <ol class="plan">
+                <li><b>Ask first.</b> Contact Deaf Reach / FESF, the Pakistan Association of the Deaf and ConnectHear, plus PSL teachers at local Deaf schools. Participants are paid and give informed consent.</li>
+                <li><b>Check every sign.</b> A Deaf PSL teacher reviews each sign's label, Urdu word and reference video. A sign gets the “Validated by Deaf signers” badge only with a recorded sign-off (validator ID and date).</li>
+                <li><b>Usability round 1.</b> 5–8 Deaf PSL users and 3 hearing partners try the five core tasks; success rates and quotes go into a public report.</li>
+                <li><b>A fair test set.</b> At least 10 Deaf signers the model never saw, from at least 3 cities (Karachi, Lahore, Islamabad first). Hand points only by default; video only with opt-in. Frozen and never trained on.</li>
+                <li><b>Only ship what is better.</b> A new model replaces the current one only if it beats it on that test set, side by side.</li>
+              </ol>
+            </div>
+          </div>
+          <div class="feedback">
+            <h3>Tell us what to fix</h3>
+            <p>Deaf signers, PSL teachers, interpreters and families: your feedback shapes what SignMate learns next.</p>
+            <p class="cta-row"><a class="btn btn-ghost todo-link" href="#validation">[TODO: feedback form link]</a> <a class="btn btn-ghost" href="https://github.com/signmate-pk/signmate-pk.github.io/issues" rel="noopener">Report a problem on GitHub</a></p>
+          </div>
+          <h3>Next milestones</h3>
+          <p>Planning targets, not promises: each step ships only when its measurement passes.</p>
+          <ol class="milestones">
+            <li><span class="when">Week of 30 Nov 2026</span> Outreach to Deaf organisations and PSL teachers; an Urdu editor reviews every Urdu word; recordings of resting hands so fewer false signs.</li>
+            <li><span class="when">Late Dec 2026</span> Release 3.1: per-sign confidence, the camera speed measured on a named phone.</li>
+            <li><span class="when">Early Jan 2027</span> Usability round 1 with Deaf PSL users, run with a partner organisation.</li>
+            <li><span class="when">Late Jan 2027</span> Release 3.2 with fixes from that testing and a public report.</li>
+            <li><span class="when">Then</span> 500 signs chosen by need, recorded with consent and checked by Deaf validators; accuracy measured on new signers in at least three cities.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============================================================ 8 · Team -->
+      <section id="team" class="section" aria-labelledby="team-title">
+        <div class="wrap">
+          <p class="eyebrow">Team</p>
+          <h2 id="team-title">Who is behind SignMate</h2>
+          <p class="todo">[TODO: school name, city, class/grade, and supervising teacher]</p>
+          <ul class="team">
+            <li class="person">
+              <div class="person-photo todo" role="img" aria-label="Photo to be added">[TODO: photo]</div>
+              <h3 class="todo">[TODO: name]</h3>
+              <p class="todo">[TODO: role, e.g. machine learning, design, testing]</p>
+            </li>
+            <li class="person">
+              <div class="person-photo todo" role="img" aria-label="Photo to be added">[TODO: photo]</div>
+              <h3 class="todo">[TODO: name]</h3>
+              <p class="todo">[TODO: role]</p>
+            </li>
+            <li class="person">
+              <div class="person-photo todo" role="img" aria-label="Photo to be added">[TODO: photo]</div>
+              <h3 class="todo">[TODO: name]</h3>
+              <p class="todo">[TODO: role]</p>
+            </li>
+          </ul>
+          <p class="note">Built in Pakistan, in the open: the code, the model, every measurement and every licence are in the <a href="https://github.com/signmate-pk/signmate-pk.github.io" rel="noopener">GitHub repository</a>.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" id="contact">
+      <div class="wrap footer-grid">
+        <div>
+          <a class="brand" href="#home"><img src="./icon.svg" alt="" width="36" height="36" /><span class="brand-name">SignMate</span><span class="visually-hidden">, back to top</span></a>
+          <p>Pakistan Sign Language to Urdu and English, on your own device.</p>
+          <h2 class="footer-h">Contact</h2>
+          <ul class="plain">
+            <li class="todo">[TODO: contact email]</li>
+            <li><a href="https://github.com/signmate-pk/signmate-pk.github.io" rel="noopener">GitHub: signmate-pk</a></li>
+            <li><a href="./ci/status.json">Latest build checks</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="footer-h" id="privacy">Privacy</h2>
+          <p>Your camera picture never leaves your device: SignMate works with hand points, keeps them only in memory, and saves nothing unless you choose to. There are no accounts and no analytics on this site. Two exceptions, both from your browser rather than from SignMate: while you are online, Google's MediaPipe library may send anonymous speed and usage counts (never images), and voice typing on the Reply screen uses your browser's speech service, which may send audio online. Typing does not.</p>
+        </div>
+        <div>
+          <h2 class="footer-h">Data and licences</h2>
+          <!--@block:credits-->
+          <p class="small">Full ledger: <code>data/LICENSES.yaml</code> in the repository.</p>
+        </div>
+      </div>
+      <div class="wrap footer-base">
+        <p>SignMate is a helper, not an interpreter. © <!--@fact:year--> SignMate team.</p>
+        <p><a href="app.html">Open the app</a> · <a href="#home">Back to top</a></p>
+      </div>
+    </footer>
+
+    <dialog id="clip-dialog" class="clip-dialog" aria-labelledby="clip-dialog-title">
+      <div class="clip-dialog-inner">
+        <h2 id="clip-dialog-title" class="clip-title"></h2>
+        <div class="clip-video"></div>
+        <p class="small">PSL dictionary video (SLT, CC BY 4.0): one performer, not yet validated by Deaf signers. No sound.</p>
+        <form method="dialog"><button class="btn btn-ghost" type="submit">Close</button></form>
+      </div>
+    </dialog>
+
+    <script type="module" src="/src/landing/landing.js"></script>
   </body>
 </html>
