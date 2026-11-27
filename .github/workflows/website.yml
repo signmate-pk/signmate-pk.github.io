@@ -114,6 +114,8 @@ jobs:
             "run": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           }
           EOF
+          test -f web/dist/index.html && grep -q 'class="sign-grid"' web/dist/index.html  # the project page has its content without JavaScript
+          test -f web/dist/app.html
           test -f web/dist/models/asl/model.tflite
           test -f web/dist/models/pose_landmarker_lite.task
           test -f web/dist/models/face_landmarker.task

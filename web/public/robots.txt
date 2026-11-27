@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://signmate-pk.github.io/sitemap.xml

@@ -5,8 +5,9 @@ or laptop you already have. It always checks with you before it speaks. The hear
 type and sees real PSL videos for the words SignMate knows. Free, no account, works offline, and the camera
 video never leaves the device.
 
-**Open it:** <https://signmate-pk.github.io/> · **No camera handy?** <https://signmate-pk.github.io/#/tour>
-(one-minute guided tour)
+**Project page:** <https://signmate-pk.github.io/> (what it is, live demo, all 69 signs, results and limits) ·
+**Open the app:** <https://signmate-pk.github.io/app.html> · **No camera handy?**
+<https://signmate-pk.github.io/app.html#/tour> (one-minute guided tour; old `/#/…` links forward to the app)
 
 > A helper, not an interpreter. For medical, legal or emergency decisions, use a qualified interpreter when
 > you can.
@@ -101,14 +102,14 @@ It replaces the current model only after a measured side-by-side improvement (CL
 - **"Learn my signing"** keeps a small adjustment in this browser only. Settings → Forget removes it.
 
 ## Run it yourself
-**Use the website.** Open <https://signmate-pk.github.io/>, then More → **Save for offline use**. After that
+**Use the website.** Open <https://signmate-pk.github.io/app.html>, then More → **Save for offline use**. After that
 it works with no internet.
 
 **Develop the website** (Node.js 22.12 or newer):
 ```bash
 cd web
 npm install
-npm run dev          # http://localhost:5173 (copies models and runtimes first: npm run assets)
+npm run dev          # http://localhost:5173 = project page, /app.html = the app (copies models and runtimes first: npm run assets)
 npm test             # 76 unit tests, no browser needed
 npm run build        # production build in web/dist (GitHub Pages deploys this from main)
 npm run build:shared # offline copy for a USB stick: web/dist-shared/SignMate-shared-copy.zip

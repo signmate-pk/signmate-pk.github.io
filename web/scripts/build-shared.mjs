@@ -26,7 +26,7 @@ const folder = path.join(outDir, "SignMate");
 const siteDir = path.join(folder, "site");
 
 // Files that must be in every shared copy, or it cannot start / recognise anything.
-export const REQUIRED = ["index.html", "asl_islr_spec.json", "feature_spec_v2.json", "vocabulary.json", "models/hand_landmarker.task", "models/pose_landmarker_lite.task", "models/face_landmarker.task", "models/asl/model.tflite", "models/asl/sign_to_prediction_index_map.json", "psl_hands_spec.json", "models/psl/manifest.json", "models/psl/psl_v3.tflite", "site_pages.json", "sw.js", "precache.json"];
+export const REQUIRED = ["index.html", "app.html", "asl_islr_spec.json", "feature_spec_v2.json", "vocabulary.json", "models/hand_landmarker.task", "models/pose_landmarker_lite.task", "models/face_landmarker.task", "models/asl/model.tflite", "models/asl/sign_to_prediction_index_map.json", "psl_hands_spec.json", "models/psl/manifest.json", "models/psl/psl_v3.tflite", "site_pages.json", "sw.js", "precache.json"];
 // Never shipped in the shared copy: CI results and source maps.
 const EXCLUDE = [/^ci\//, /\.map$/];
 
