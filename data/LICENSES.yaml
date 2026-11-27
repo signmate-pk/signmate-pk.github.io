@@ -1,9 +1,9 @@
-# SignBridge licence ledger (CLAUDE.md section 4).
+# SignMate licence ledger (CLAUDE.md section 4).
 #
 # Every dataset, model weight file, reference-clip collection, font and own-data collection the
 # project uses or has evaluated has one entry here. tools/check_licenses.py validates this file
-# against data/licenses.schema.json and fails when a file in models/, data/, fonts/,
-# web/public/models/ or mobile/assets/ is not covered by an entry that allows its use.
+# against data/licenses.schema.json and fails when a file in models/, data/, web/public/models/ or
+# web/public/clips/ is not covered by an entry that allows its use.
 # Code that trains on or ships an asset calls data_engine.ledger.assert_allowed(asset_id, use).
 #
 # Uses (allowed_uses):
@@ -14,9 +14,11 @@
 #   redistribute_weights  ship model weights (its own, or weights trained on it)
 #   redistribute_data     ship or re-publish its files
 #
-# status: cleared | cleared_with_conditions | permission_needed | blocked | not_available | unverified
+# status: cleared | cleared_with_conditions | permission_needed | blocked | not_available | unverified | retired
 # Only cleared / cleared_with_conditions entries may have files in the repository.
-# label_scope asl_mode_only: labels may be used only inside the separate ASL mode (CLAUDE.md 8.2).
+# retired: no longer used (master v4 retired every PSL entry, CLAUDE.md 10.1); the entry is kept as a record,
+#   with its former status and uses under `retired`. It allows nothing and covers no file.
+# label_scope asl_mode_only: ASL labels; since master v4 ASL is SignMate's only language (CLAUDE.md 10.1).
 #
 # All entries below were checked on 2026-11-18 by the agent from the public pages named in
 # licence_evidence. Facts marked "third-party" come from a catalogue, not the publisher, and must be
@@ -112,14 +114,18 @@ assets:
     licence: Apache-2.0
     licence_url: https://www.apache.org/licenses/LICENSE-2.0
     licence_evidence: "Kaggle dataset API metadata (licence 'Apache 2.0', version 3, updated 2026-06-28) and Hugging Face dataset card (license: apache-2.0, DOI 10.57967/hf/8164), both read 2026-11-18."
-    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: false, redistribute_weights: true, redistribute_data: true}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution]
     attribution: "Dynamic Word-Level Pakistan Sign Language Dataset by Mohib Ullah Khan Sherwani and the SignSpeak team, COMSATS University Islamabad, Abbottabad Campus (Apache License 2.0, doi:10.57967/hf/8164)."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [pretrain_encoder, train_labels, evaluate, redistribute_weights, redistribute_data]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/psl-signspeak-words/*
+    files: []
     facts:
       kaggle_v3: "70+ words, 100 samples per word (mobile 30, laptop 50, webcam 20), 410548665 bytes"
       huggingface: "60+ words, 70 samples per word (MP_Data 50 webcam, MP_Data_mobile 20), two zips 158784931 + 276450712 bytes"
@@ -139,14 +145,18 @@ assets:
     licence: CC-BY-4.0
     licence_url: https://creativecommons.org/licenses/by/4.0/
     licence_evidence: "Mendeley Data page, version 3 (7 January 2025), licence CC BY 4.0, read 2026-11-18. Data in Brief article doi:10.1016/j.dib.2025.111342."
-    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: true, redistribute_weights: true, redistribute_data: true}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution]
     attribution: "UAlpha40 by Sameena Javaid, Shahood Sajid and Yusra Khan Baloch, Bahria University (CC BY 4.0, doi:10.17632/3pvnnckxyb.3)."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [pretrain_encoder, train_labels, evaluate, reference_clip, redistribute_weights, redistribute_data]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/psl-ualpha40/*
+    files: []
     facts:
       classes: "40 Urdu letters: 36 static (JPG) + 4 dynamic (MP4)"
       samples: "22,280 images (2,897 original + 19,383 augmented) and 393 videos"
@@ -166,14 +176,18 @@ assets:
     licence: CC-BY-4.0
     licence_url: https://creativecommons.org/licenses/by/4.0/
     licence_evidence: "Mendeley Data page, version 2 (26 September 2022), licence CC BY 4.0, read 2026-11-18."
-    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: true, redistribute_weights: true, redistribute_data: true}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution]
     attribution: "PkSLMNM by Sameena Javaid and Safdar Rizvi, Bahria University (CC BY 4.0, doi:10.17632/m3m9924p3v.2)."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [pretrain_encoder, train_labels, evaluate, reference_clip, redistribute_weights, redistribute_data]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/psl-pkslmnm/*
+    files: []
     facts:
       classes: "7 adjective signs: bad, best, sad, glad, scared, stiff, surprised (each with a facial expression)"
       signers: "100 individuals (Mendeley page) or 180 (CMC article); Deaf status not stated; no signer IDs mentioned"
@@ -190,14 +204,18 @@ assets:
     licence: CC-BY-4.0
     licence_url: https://creativecommons.org/licenses/by/4.0/
     licence_evidence: "Mendeley Data page, version 3 (26 September 2022), licence CC BY 4.0, read 2026-11-18."
-    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: true, redistribute_weights: true, redistribute_data: true}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution]
     attribution: "Expression through Hands_PSL by Sameena Javaid et al. (CC BY 4.0, doi:10.17632/4d6tj5snkd.3)."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [pretrain_encoder, train_labels, evaluate, reference_clip, redistribute_weights, redistribute_data]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/psl-expression-hands/*
+    files: []
     facts:
       classes: "same 7 adjectives as PkSLMNM"
       format: "not stated (captured on an OPPO A76 phone)"
@@ -212,14 +230,18 @@ assets:
     source_url: https://www.kaggle.com/datasets/jahanzebnaeem/wlpsl
     licence: C-UDA-1.0 (non-commercial)
     licence_evidence: "Kaggle dataset API metadata: licence 'Other (specified in description)'; the description names the Computational Use of Data Agreement and says academic and computational use only, no commercial use (read 2026-11-18)."
-    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: true, reference_clip: false, redistribute_weights: false, redistribute_data: false}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution, non_commercial, research_only]
     attribution: "WLPSL dataset by Jahanzeb Naeem et al. (C-UDA, non-commercial)."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [evaluate]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/psl-wlpsl-naeem/*
+    files: []
     facts:
       classes: "31 words: alert, careful, cheap, crazy, dangerous, decent, dumb, excited, extreme, fantastic, far, fearful, foreign, funny, good, healthy, heavy, important, intelligent, interesting, late, less, new, no, noisy, peaceful, quick, ready, secure, smart, yes"
       samples: "248 videos, 370276472 bytes"
@@ -238,7 +260,12 @@ assets:
     allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution, provenance_unverified, consent_required, language_unconfirmed]
     attribution: "Pakistani Sign Language dataset by Hugging Face user Bakhtyar12 (MIT licence, as stated on the dataset card)."
-    status: unverified
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: unverified
+      previous_allowed_uses: []
     checked_on: "2026-11-26"
     checked_by: agent
     files: []
@@ -259,7 +286,12 @@ assets:
     allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution, non_commercial, research_only, access_by_request]
     attribution: "PSL-128 by Muhammad Usman, Muhammad Farooq, Zulfiqar Ali and Reham Alhejaili (CC BY-NC 4.0, doi:10.5281/zenodo.21946282)."
-    status: permission_needed
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: permission_needed
+      previous_allowed_uses: []
     checked_on: "2026-11-18"
     checked_by: agent
     files: []
@@ -281,7 +313,12 @@ assets:
     allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: []
     attribution: ""
-    status: permission_needed
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: permission_needed
+      previous_allowed_uses: []
     checked_on: "2026-11-18"
     checked_by: agent
     files: []
@@ -299,14 +336,18 @@ assets:
     licence: GPL-2.0
     licence_url: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
     licence_evidence: "Kaggle dataset API metadata: licence 'GPL 2', 9200060 bytes, read 2026-11-18."
-    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: true, reference_clip: false, redistribute_weights: false, redistribute_data: false}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [share_alike]
     attribution: "Pakistan Sign Language Dataset (OpenPose) by Saad Butt (GPL-2.0)."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [evaluate]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/psl-saadbutt-openpose/*
+    files: []
     facts:
       classes: "37 Urdu letters + 12 Urdu words"
       format: "2D OpenPose key points in main_dataset.db: right hand only (42 values) for letters; both hands + 13 body points (110 values) for words; single images"
@@ -324,7 +365,12 @@ assets:
     allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: []
     attribution: ""
-    status: permission_needed
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: permission_needed
+      previous_allowed_uses: []
     checked_on: "2026-11-18"
     checked_by: agent
     files: []
@@ -343,7 +389,12 @@ assets:
     allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: []
     attribution: ""
-    status: not_available
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: not_available
+      previous_allowed_uses: []
     checked_on: "2026-11-18"
     checked_by: agent
     files: []
@@ -359,7 +410,12 @@ assets:
     allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution, share_alike]
     attribution: "Pakistani Sign Language (PSL) Lexicon Dataset by Shayan Noorullah (Kaggle)."
-    status: unverified
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: unverified
+      previous_allowed_uses: []
     checked_on: "2026-11-18"
     checked_by: agent
     files: []
@@ -380,16 +436,18 @@ assets:
     licence: CC-BY-4.0
     licence_url: https://creativecommons.org/licenses/by/4.0/
     licence_evidence: "Repository LICENSE file is the CC BY 4.0 legal code and the README says the dataset may be used for any purpose with credit (read 2026-11-18)."
-    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: true, redistribute_weights: true, redistribute_data: true}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution, provenance_unverified]
     attribution: "Pakistan Sign Language dictionary clips from Sign Language Datasets by Mudassar Iqbal (2023), github.com/sign-language-translator/sign-language-datasets, CC BY 4.0."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [pretrain_encoder, train_labels, evaluate, reference_clip, redistribute_weights, redistribute_data]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/psl-slt-dictionary/*
-      - path: web/public/clips/psl/*
-      - path: mobile/assets/clips/psl/*
+    files: []
     facts:
       clips: "788 pk-hfad-1 dictionary videos in releases v0.0.3/v0.0.4 (README: 776 signs, 27 min) plus 1 pk-hfad-2 clip"
       landmarks: "v0.0.4: pk-hfad-1.landmarks-mediapipe-image-csv.zip and -world-csv.zip; MediaPipe pose (33 points) + 2 hands (21 points each), 5 values per point (x, y, z, visibility, presence), one row per video frame"
@@ -408,7 +466,12 @@ assets:
     allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution]
     attribution: "Dictionary replications from Sign Language Datasets by Mudassar Iqbal, CC BY 4.0."
-    status: not_available
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: not_available
+      previous_allowed_uses: []
     checked_on: "2026-11-18"
     checked_by: agent
     files: []
@@ -443,7 +506,6 @@ assets:
         sha256: f55a2bb1ebe6d1e912a98e31c6ef3f995c9ae261f408fe115f2008099d3f0bb7
       - path: web/public/models/asl/sign_to_prediction_index_map.json
         sha256: 1fe747c2f44c68dbb396947e35193c96d363f3dede0be8defa5e08546400bf5d
-      - path: mobile/assets/models/asl/*
     facts:
       files: "model.tflite 11242036 bytes; sign_to_prediction_index_map.json 3352 bytes (250 classes)"
       input: "signature serving_default: inputs [-1, 543, 3] float32 -> outputs [250] float32; 1,408 operators of 32 built-in kinds, no custom ops (read from the flatbuffer 2026-11-18)"
@@ -545,14 +607,18 @@ assets:
     source_url: project:vocabulary.json
     licence: project-owned
     licence_evidence: "Written for this project (Phase 0); synced by tools/sync_vocabulary.py."
-    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: true}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: []
     attribution: ""
-    status: cleared
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared
+      previous_allowed_uses: [redistribute_data]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: mobile/assets/vocabulary.json
+    files: []
 
   - id: signbridge-own-recordings
     name: SignBridge's own recordings, local database and models trained on them
@@ -562,21 +628,18 @@ assets:
     source_url: project:collect_data.py
     licence: project-owned, per-recording consent
     licence_evidence: "Recorded with this project's own tools; recording format v2 stores consent per recording and training_use_refusal() blocks records without it."
-    allowed_uses: {pretrain_encoder: true, train_labels: true, evaluate: true, reference_clip: false, redistribute_weights: true, redistribute_data: false}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [consent_required]
     attribution: ""
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [pretrain_encoder, train_labels, evaluate, redistribute_weights]
     checked_on: "2026-11-18"
     checked_by: agent
-    files:
-      - path: data/*.csv
-      - path: data/*.sqlite3
-      - path: data/*.sqlite3-shm
-      - path: data/*.sqlite3-wal
-      - path: data/*.local.*
-      - path: data/recordings_v2/*
-      - path: models/*.joblib
-      - path: models/model_metadata.json
+    files: []
     notes: "Local only (git-ignored). Each training path must still call training_use_refusal() per recording."
 
   - id: signbridge-psl-model-v3
@@ -587,14 +650,15 @@ assets:
     source_url: project:tools/psl_train
     licence: "project-owned weights, trained on psl-signspeak-words (Apache-2.0)"
     licence_evidence: "Trained by .github/workflows/psl-train.yml (run 44884632047, 2026-11-21) only on psl-signspeak-words, whose Apache-2.0 licence allows training and redistributing derived weights with attribution (see that entry). Manifest: models/psl/manifest.json (SHA-256 of the model inside)."
-    allowed_uses: {pretrain_encoder: true, train_labels: false, evaluate: true, reference_clip: false, redistribute_weights: true, redistribute_data: false}
+    allowed_uses: {pretrain_encoder: false, train_labels: false, evaluate: false, reference_clip: false, redistribute_weights: false, redistribute_data: false}
     conditions: [attribution]
     attribution: "PSL recogniser trained on the Dynamic Word-Level Pakistan Sign Language Dataset by Mohib Ullah Khan Sherwani and the SignSpeak team, COMSATS University Islamabad, Abbottabad Campus (Apache License 2.0, doi:10.57967/hf/8164)."
-    status: cleared_with_conditions
+    status: retired
+    retired:
+      date: "2026-11-27"
+      reason: "Master v4: SignMate is ASL only (CLAUDE.md 10.1). PSL is archived on the tag psl-v3-final and removed from main."
+      previous_status: cleared_with_conditions
+      previous_allowed_uses: [pretrain_encoder, evaluate, redistribute_weights]
     checked_on: "2026-11-21"
     checked_by: agent
-    files:
-      - path: models/psl/psl_v3.tflite
-        sha256: 72c71f80f17f57fe84717f6fd593d8c776a1ac42c79a270df9e631bc8efcab0e
-      - path: models/psl/manifest.json
-        sha256: b96dba023104b5d8838e0475ec5e925b2bbbffa60fc8234af749779267d49253
+    files: []

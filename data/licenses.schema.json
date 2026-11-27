@@ -154,7 +154,8 @@
               "permission_needed",
               "blocked",
               "not_available",
-              "unverified"
+              "unverified",
+              "retired"
             ]
           },
           "checked_on": {
@@ -190,6 +191,33 @@
           },
           "notes": {
             "type": "string"
+          },
+          "retired": {
+            "type": "object",
+            "required": [
+              "date",
+              "reason",
+              "previous_status",
+              "previous_allowed_uses"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "previous_status": {
+                "type": "string"
+              },
+              "previous_allowed_uses": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }

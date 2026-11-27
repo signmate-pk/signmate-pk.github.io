@@ -2,10 +2,9 @@
 and refuse uses an asset's licence does not allow.
 
     from data_engine.ledger import assert_allowed
-    assert_allowed("psl-signspeak-words", "train_labels")             # returns the entry
-    assert_allowed("psl-128", "train_labels")                           # raises LicenceError
-    assert_allowed("asl-islr-1st-place-tflite", "train_labels")         # raises: ASL labels outside ASL mode
-    assert_allowed("asl-islr-1st-place-tflite", "train_labels", purpose_language="ASL")  # allowed
+    assert_allowed("asl-popsign-v1", "train_labels")                     # returns the entry (ASL is the default)
+    assert_allowed("psl-signspeak-words", "train_labels")                # raises LicenceError: retired (master v4)
+    assert_allowed("asl-gislr-competition-data", "redistribute_data")    # raises LicenceError: not allowed
 
 Every training script, bundle builder and asset-copy step must call assert_allowed before it uses an
 asset. tools/check_licenses.py runs check_repository() over the folders in SCAN_RULES.
@@ -31,15 +30,11 @@ CLEARED = ("cleared", "cleared_with_conditions")
 LANGUAGES = ("PSL", "ASL")
 
 # Folders whose files must each be covered by a ledger entry, with the uses that entry must allow.
-# The most specific (longest) root wins. "shipped" roots end up inside an app or web build.
+# The most specific (longest) root wins. "shipped" roots end up inside the website build.
 SCAN_RULES: tuple[dict[str, Any], ...] = (
     {"root": "web/public/clips", "all_of": ("reference_clip", "redistribute_data"), "any_of": (), "shipped": True},
-    {"root": "mobile/assets/clips", "all_of": ("reference_clip", "redistribute_data"), "any_of": (), "shipped": True},
-    {"root": "mobile/assets/models", "all_of": ("redistribute_weights",), "any_of": (), "shipped": True},
     {"root": "web/public/models", "all_of": ("redistribute_weights",), "any_of": (), "shipped": True},
-    {"root": "mobile/assets", "all_of": (), "any_of": ("redistribute_weights", "redistribute_data"), "shipped": True},
     {"root": "models", "all_of": ("redistribute_weights",), "any_of": (), "shipped": True},
-    {"root": "fonts", "all_of": ("redistribute_data",), "any_of": (), "shipped": True},
     {"root": "data", "all_of": (), "any_of": ("train_labels", "pretrain_encoder", "evaluate", "reference_clip"), "shipped": False},
 )
 IGNORED_NAMES = {".gitkeep", "README.md", ".DS_Store", "Thumbs.db", "desktop.ini"}
@@ -206,6 +201,8 @@ def validate_ledger(ledger: Any, schema: dict | None = None, today: _dt.date | N
             errors.append(f"{name}: sign_language {entry['sign_language']} needs label_scope {expected_scope} (CLAUDE.md 8.2)")
         uses = entry["allowed_uses"]
         conditions = set(entry["conditions"])
+        if (entry["status"] == "retired") != ("retired" in entry):
+            errors.append(f"{name}: status retired and the 'retired' record go together")
         if entry["status"] not in CLEARED:
             if any(uses.values()):
                 errors.append(f"{name}: status {entry['status']} cannot allow any use")
@@ -319,11 +316,11 @@ def get_entry(asset_id: str, ledger: dict | None = None) -> dict:
     raise LicenceError(f"{asset_id!r} is not in data/LICENSES.yaml, so it may not be used for anything")
 
 
-def assert_allowed(asset_id: str, use: str, purpose_language: str = "PSL", ledger: dict | None = None) -> dict:
+def assert_allowed(asset_id: str, use: str, purpose_language: str = "ASL", ledger: dict | None = None) -> dict:
     """Return the ledger entry if `use` is allowed for `asset_id`; raise LicenceError otherwise.
 
-    purpose_language is the sign language of the model or feature being built ("PSL" or "ASL").
-    ASL labels may only feed ASL mode and PSL labels only PSL (CLAUDE.md 8.2).
+    purpose_language is the sign language of the model or feature being built. Since master v4 that is ASL
+    (CLAUDE.md 10.1): every PSL entry is retired, and labels or clips of one sign language never serve another.
     """
     if use not in USES:
         raise ValueError(f"unknown use {use!r}; choose from {USES}")

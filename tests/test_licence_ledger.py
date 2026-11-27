@@ -27,7 +27,7 @@ SCHEMA = load_schema()
 def entry(**overrides) -> dict:
     """A minimal valid entry; tests override what they need."""
     base = {
-        "id": "test-asset", "name": "Test asset", "kind": "dataset", "sign_language": "PSL", "label_scope": "psl",
+        "id": "test-asset", "name": "Test asset", "kind": "dataset", "sign_language": "ASL", "label_scope": "asl_mode_only",
         "source_url": "https://example.org/data", "licence": "CC-BY-4.0", "licence_evidence": "read on the test page",
         "allowed_uses": {"pretrain_encoder": True, "train_labels": True, "evaluate": True, "reference_clip": False,
                          "redistribute_weights": True, "redistribute_data": False},
@@ -184,57 +184,84 @@ class RepositoryCheckTests(unittest.TestCase):
         self.assertTrue(any("more than one ledger entry" in e for e in report.errors), report.errors)
 
     def test_release_rules_require_hashes_and_resolved_provenance(self):
-        unpinned = "mobile/assets/models/asl/model.tflite"  # covered by a pattern, so no hash is recorded for it
-        files = {unpinned: b"phone copy stand-in", "web/public/clips/psl/help.mp4": b"clip"}
+        unpinned = "web/public/models/asl/extra.tflite"  # covered by a pattern, so no hash is recorded for it
+        clip = "web/public/clips/asl/hello.mp4"
+        uses = {"pretrain_encoder": False, "train_labels": False, "evaluate": True, "reference_clip": True,
+                "redistribute_weights": True, "redistribute_data": True}
+        ledger = ledger_with(entry(id="test-weights", kind="model_weights", allowed_uses=uses, files=[{"path": "web/public/models/asl/*"}]),
+                             entry(id="test-clips", allowed_uses=uses, conditions=["attribution", "provenance_unverified"],
+                                   files=[{"path": "web/public/clips/asl/*"}]))
+        files = {unpinned: b"model stand-in", clip: b"clip"}
         with TempRepo(files) as root:
-            default = check_repository(LEDGER, root)
-            release = check_repository(LEDGER, root, release=True)
+            default = check_repository(ledger, root)
+            release = check_repository(ledger, root, release=True)
         self.assertTrue(default.ok, default.errors)
         self.assertTrue(any(f"{unpinned}: no SHA-256" in w for w in default.warnings), default.warnings)
         self.assertTrue(any(f"{unpinned}: no SHA-256" in e for e in release.errors), release.errors)
-        self.assertTrue(any("web/public/clips/psl/help.mp4" in e and "provenance_unverified" in e for e in release.errors), release.errors)
+        self.assertTrue(any(clip in e and "provenance_unverified" in e for e in release.errors), release.errors)
 
     def test_readme_gitkeep_and_ledger_files_are_not_assets(self):
-        with TempRepo({"fonts/README.md": b"#", "data/.gitkeep": b"", "data/LICENSES.yaml": b"x",
-                       "data/cards/psl-v1.md": b"#", "models/hand_landmarker.task.download": b"partial"}) as root:
+        with TempRepo({"models/README.md": b"#", "data/.gitkeep": b"", "data/LICENSES.yaml": b"x",
+                       "data/cards/asl-v1.md": b"#", "models/hand_landmarker.task.download": b"partial"}) as root:
             self.assertEqual(scan_files(root), [])
 
 
 class AssertAllowedTests(unittest.TestCase):
     def test_cleared_use_returns_the_entry(self):
-        self.assertEqual(assert_allowed("psl-signspeak-words", "train_labels", ledger=LEDGER)["licence"], "Apache-2.0")
-        assert_allowed("psl-slt-dictionary", "reference_clip", ledger=LEDGER)
+        self.assertEqual(assert_allowed("asl-popsign-v1", "train_labels", ledger=LEDGER)["licence"], "CC-BY-4.0")
+        assert_allowed("asl-islr-1st-place-tflite", "redistribute_weights", ledger=LEDGER)
         assert_allowed("mediapipe-hand-landmarker", "redistribute_weights", ledger=LEDGER)
+
+    def test_every_psl_entry_is_retired_and_allows_nothing(self):
+        psl = [e for e in LEDGER["assets"] if e["sign_language"] == "PSL"]
+        self.assertGreaterEqual(len(psl), 15)
+        for item in psl:
+            with self.subTest(asset=item["id"]):
+                self.assertEqual(item["status"], "retired")
+                self.assertFalse(any(item["allowed_uses"].values()))
+                self.assertEqual(item["files"], [])
+                self.assertEqual(item["retired"]["date"], "2026-11-27")
+                with self.assertRaises(LicenceError):
+                    assert_allowed(item["id"], "evaluate", ledger=LEDGER)
+        signspeak = next(e for e in psl if e["id"] == "psl-signspeak-words")
+        self.assertEqual(signspeak["retired"]["previous_status"], "cleared_with_conditions")
+        self.assertIn("train_labels", signspeak["retired"]["previous_allowed_uses"])
+
+    def test_retired_status_and_record_go_together(self):
+        record = {"date": "2026-11-27", "reason": "test", "previous_status": "cleared", "previous_allowed_uses": []}
+        no_uses = {use: False for use in entry()["allowed_uses"]}
+        self.assertEqual(validate_ledger(ledger_with(entry(status="retired", retired=record, allowed_uses=no_uses))), [])
+        self.assertTrue(validate_ledger(ledger_with(entry(status="retired", allowed_uses=no_uses))))
+        self.assertTrue(validate_ledger(ledger_with(entry(retired=record))))
 
     def test_uses_the_licence_does_not_allow_are_refused(self):
         refused = [
-            ("psl-128", "train_labels"),               # permission needed
-            ("psl-umt-anwar-usama", "evaluate"),       # no licence at all
-            ("psl-fesf-dictionary", "reference_clip"),  # all rights reserved
-            ("psl-wlpsl-naeem", "redistribute_weights"),  # non-commercial
-            ("psl-wlpsl-naeem", "train_labels"),       # evaluation only
-            ("psl-saadbutt-openpose", "train_labels"),  # GPL-2.0, evaluation only
+            ("asl-gislr-competition-data", "redistribute_data"),  # competition rules forbid raw redistribution
+            ("asl-gislr-competition-data", "reference_clip"),
+            ("asl-islr-1st-place-tflite", "redistribute_data"),
             ("asl-fingerspelling-1st-place", "redistribute_weights"),  # no weights published
+            ("psl-signspeak-words", "train_labels"),  # retired with PSL (master v4)
             ("not-in-the-ledger", "evaluate"),
         ]
         for asset_id, use in refused:
             with self.subTest(asset=asset_id, use=use), self.assertRaises(LicenceError):
                 assert_allowed(asset_id, use, ledger=LEDGER)
 
-    def test_asl_and_psl_labels_never_cross(self):
+    def test_labels_and_clips_never_cross_sign_languages(self):
+        assert_allowed("asl-islr-1st-place-tflite", "train_labels", ledger=LEDGER)  # ASL is the default purpose
         with self.assertRaises(LicenceError):
             assert_allowed("asl-islr-1st-place-tflite", "train_labels", purpose_language="PSL", ledger=LEDGER)
-        assert_allowed("asl-islr-1st-place-tflite", "train_labels", purpose_language="ASL", ledger=LEDGER)
-        with self.assertRaises(LicenceError):
-            assert_allowed("psl-signspeak-words", "train_labels", purpose_language="ASL", ledger=LEDGER)
         with self.assertRaises(LicenceError):
             assert_allowed("asl-popsign-v1", "reference_clip", purpose_language="PSL", ledger=LEDGER)
+        psl_entry = entry(id="test-psl", sign_language="PSL", label_scope="psl", status="cleared")
+        with self.assertRaises(LicenceError):
+            assert_allowed("test-psl", "train_labels", ledger=ledger_with(psl_entry))
 
     def test_unknown_use_or_language_is_a_programming_error(self):
         with self.assertRaises(ValueError):
-            assert_allowed("psl-signspeak-words", "sell", ledger=LEDGER)
+            assert_allowed("asl-popsign-v1", "sell", ledger=LEDGER)
         with self.assertRaises(ValueError):
-            assert_allowed("psl-signspeak-words", "train_labels", purpose_language="BSL", ledger=LEDGER)
+            assert_allowed("asl-popsign-v1", "train_labels", purpose_language="BSL", ledger=LEDGER)
 
 
 if __name__ == "__main__":
