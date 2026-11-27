@@ -1,6 +1,6 @@
 """The website's "How well it works", "Credits" and "What's new" pages read shared_data/site_pages.json.
-It must be exactly what tools/site_pages.py builds from the committed reports, so the page and the reports
-never disagree (master-v3 Stage 7)."""
+It must be exactly what tools/site_pages.py builds from the committed files, so the pages and the measurements
+never disagree. Master v4: ASL only."""
 
 import importlib.util
 import json
@@ -25,23 +25,22 @@ class SitePagesTests(unittest.TestCase):
     def test_every_shipped_asset_is_credited_with_its_ledger_licence(self):
         pages = builder().build()
         ids = {a["id"] for a in pages["credits"]["assets"]}
-        self.assertIn("psl-slt-dictionary", ids)
         self.assertIn("asl-islr-1st-place-tflite", ids)
+        self.assertIn("asl-gislr-rerun-set", ids)
+        self.assertFalse(any(i.startswith("psl-") for i in ids), "PSL is retired (CLAUDE.md 10.1)")
         for asset in pages["credits"]["assets"]:
             self.assertTrue(asset["licence"])
             if asset["licence"] not in ("project-owned",):
                 self.assertTrue(asset["attribution"], asset["id"])
 
-    def test_psl_bundle_licences_are_credited(self):
+    def test_asl_numbers_come_from_the_results_file(self):
         pages = builder().build()
-        manifest_path = ROOT / "models" / "psl" / "manifest.json"
-        if not manifest_path.exists():
-            self.skipTest("no PSL bundle committed")
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        ids = {a["id"] for a in pages["credits"]["assets"]}
-        for ledger_id in manifest["licences"]:
-            self.assertIn(ledger_id, ids)
-        self.assertEqual(pages["psl"]["signs"], sum(1 for c in manifest["classes"] if c.get("tier")))
+        results = json.loads((ROOT / "shared_data" / "asl_results.json").read_text(encoding="utf-8"))
+        self.assertEqual(pages["asl"]["top1"], results["headline"]["native_top1"])
+        self.assertEqual(pages["asl"]["browser_top1"], results["headline"]["browser_top1"])
+        self.assertEqual(pages["asl"]["samples"], results["dataset"]["samples_evaluated"])
+        self.assertTrue(all(m["what"].startswith("ASL model") for m in pages["performance"]["measurements"]))
+        self.assertNotIn("psl", pages)
 
 
 if __name__ == "__main__":

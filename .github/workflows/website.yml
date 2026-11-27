@@ -1,4 +1,4 @@
-# Builds the SignBridge website, runs every check, and publishes the site on GitHub Pages:
+# Builds the SignMate website, runs every check, and publishes the site on GitHub Pages:
 #   https://<owner>.github.io/<repository>/
 # Runs on every push to main, or by hand from the Actions tab ("Run workflow").
 #
@@ -78,27 +78,15 @@ jobs:
         working-directory: web
         run: npm install --no-save --no-audit --no-fund playwright && npx playwright install --with-deps chromium
 
-      - name: Build with the local server enabled (for the browser checks)
+      - name: Build the website for GitHub Pages (everything runs in the browser; there is no server)
         working-directory: web
-        env:
-          GITHUB_TOKEN: ${{ github.token }}  # read the SLT dictionary list (GitHub API limit)
         run: npm run build
 
-      - name: ASL mode in a real browser, compared with the server
+      - name: ASL in a real browser (worker), the translator with a camera, old links forward
         id: asl
         continue-on-error: true
-        run: |
-          python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 > ci-results/server.log 2>&1 &
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/api/health > /dev/null && break; sleep 1; done
-          cd web
-          SELFTEST_API=http://127.0.0.1:8000 SELFTEST_REQUIRE_WORKER=1 SELFTEST_OUT=../ci-results/asl-selftest.json node tests/asl-selftest-run.mjs
-
-      - name: Build the website for GitHub Pages (no server; everything runs in the browser)
         working-directory: web
-        env:
-          GITHUB_TOKEN: ${{ github.token }}  # read the SLT dictionary list (GitHub API limit)
-          VITE_API_BASE: none
-        run: npm run build
+        run: SELFTEST_REQUIRE_WORKER=1 SELFTEST_OUT=../ci-results/asl-selftest.json node tests/asl-selftest-run.mjs
 
       - name: Add the check results to the website
         run: |
@@ -110,12 +98,14 @@ jobs:
             "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "tests": "${{ steps.tests.outcome }}",
             "licence_release_rules": "${{ steps.licences.outcome }}",
-            "asl_browser_and_server_check": "${{ steps.asl.outcome }}",
+            "asl_browser_check": "${{ steps.asl.outcome }}",
             "run": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           }
           EOF
           test -f web/dist/index.html && grep -q 'class="sign-grid"' web/dist/index.html  # the project page has its content without JavaScript
-          test -f web/dist/app.html
+          test -f web/dist/translate/index.html  # the translator
+          test -f web/dist/app.html              # forwards old links to translate/
+          ! test -e web/dist/manifest.webmanifest  # a website, not an app (CLAUDE.md 10.7)
           test -f web/dist/models/asl/model.tflite
           test -f web/dist/models/pose_landmarker_lite.task
           test -f web/dist/models/face_landmarker.task

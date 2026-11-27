@@ -5,8 +5,8 @@
 #
 # What you get (Actions tab > the run > Artifacts, at the bottom of the summary page):
 #   site-preview         the website as GitHub Pages would serve it; unzip and open with any local web server
-#   shared-copy          SignMate-shared-copy.zip: unzip on Windows and double-click "Start SignMate.bat"
 #   check-results        every test's output, the ASL browser self-test and the baseline comparison
+# SignMate is a website only (CLAUDE.md 10.7): there is no offline copy or app to build.
 name: Preview build and checks
 
 on:
@@ -89,32 +89,15 @@ jobs:
         continue-on-error: true
         run: node tools/baseline/run.mjs --timings ci-results/baseline-timings.json
 
-      - name: Build with the local server enabled (for the browser checks)
+      - name: Build the website as GitHub Pages serves it
         working-directory: web
-        env:
-          GITHUB_TOKEN: ${{ github.token }}  # read the SLT dictionary list (GitHub API limit)
         run: npm run build
 
-      - name: ASL mode in a real browser, compared with the server; the model must run in the worker
+      - name: ASL in a real browser (the model must run in the worker), the translator with a camera, old links
         id: asl
         continue-on-error: true
-        run: |
-          python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 > ci-results/server.log 2>&1 &
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/api/health > /dev/null && break; sleep 1; done
-          cd web
-          SELFTEST_API=http://127.0.0.1:8000 SELFTEST_REQUIRE_WORKER=1 SELFTEST_OUT=../ci-results/asl-selftest.json node tests/asl-selftest-run.mjs
-
-      - name: Build the website as GitHub Pages serves it (no server)
         working-directory: web
-        env:
-          GITHUB_TOKEN: ${{ github.token }}  # read the SLT dictionary list (GitHub API limit)
-          VITE_API_BASE: none
-        run: npm run build
-
-      - name: PSL bundle in a real browser (Stage 2 gate, web part)
-        id: psl
-        continue-on-error: true
-        run: node tools/psl_browser/run.mjs | tee ci-results/psl-browser.txt
+        run: SELFTEST_REQUIRE_WORKER=1 SELFTEST_OUT=../ci-results/asl-selftest.json node tests/asl-selftest-run.mjs
 
       - name: Lighthouse on the Pages build (measured on GitHub's computer, simulated throttling)
         id: lighthouse
@@ -125,9 +108,9 @@ jobs:
           python -m http.server 4173 --directory web/dist > ci-results/lighthouse-server.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:4173/ && break; sleep 2; done  # wait until it answers
           export CHROME_PATH="$(cd web && node -e "console.log(require('playwright').chromium.executablePath())")"
-          # Both pages: the project page (/) and the app (/app.html). Budgets (docs/WEBSITE.md): mobile performance
-          # >= 90, accessibility 100, best practices >= 95, SEO 100.
-          for page in "" "app.html"; do
+          # Both pages: the project page (/) and the translator (/translate/). Budgets (master-v4 section 7):
+          # performance >= 95, accessibility 100, best practices 100, SEO 100.
+          for page in "" "translate/"; do
             for preset in desktop mobile; do
               extra=""; [ "$preset" = desktop ] && extra="--preset=desktop"
               name="$preset"; [ -n "$page" ] && name="app-$preset"
@@ -162,36 +145,25 @@ jobs:
           print(json.dumps(out, indent=1))
           PY
 
-      - name: Build the offline shared copy (npm run build:shared)
-        id: shared
-        continue-on-error: true
-        working-directory: web
-        env:
-          GITHUB_TOKEN: ${{ github.token }}  # read the SLT dictionary list (GitHub API limit)
-        run: npm run build:shared
-
       - name: Summary
         if: always()
         run: |
           {
-            echo "## SignBridge preview: ${GITHUB_SHA::7}"
+            echo "## SignMate preview: ${GITHUB_SHA::7}"
             echo ""
             echo "| Check | Result |"
             echo "|---|---|"
             echo "| All test suites (incl. Inference Baseline v1 in Chromium) | ${{ steps.tests.outcome }} |"
             echo "| Licence check, store-release rules | ${{ steps.licences.outcome }} |"
-            echo "| ASL in the browser: worker, and same answers as the server | ${{ steps.asl.outcome }} |"
-            echo "| PSL bundle in the browser: same top-1 as Python | ${{ steps.psl.outcome }} |"
+            echo "| ASL in the browser (worker), the translator with a camera, old links forward | ${{ steps.asl.outcome }} |"
             echo "| Lighthouse measured | ${{ steps.lighthouse.outcome }} |"
-            echo "| Offline shared copy built | ${{ steps.shared.outcome }} |"
-            [ -f ci-results/psl-browser.txt ] && { echo ""; echo '```'; cat ci-results/psl-browser.txt; echo '```'; }
             [ -f ci-results/lighthouse-summary.json ] && { echo ""; echo '```'; cat ci-results/lighthouse-summary.json; echo '```'; }
             echo ""
-            echo "Download the preview site and the shared copy from **Artifacts** below."
+            echo "Download the preview site from **Artifacts** below."
             if [ -f ci-results/asl-selftest.json ]; then
               echo ""
               echo '```'
-              python -c "import json; d=json.load(open('ci-results/asl-selftest.json')); s=d.get('selftest',{}); print('thread:', s.get('browser',{}).get('thread'), '| worker error:', s.get('browserWorkerError')); [print('sign', x['seed'], 'len', x['length'], 'browser ms', x.get('browser',{}).get('medianMs'), 'top1', x.get('browser',{}).get('top1')) for x in s.get('signs',[])]"
+              python -c "import json; d=json.load(open('ci-results/asl-selftest.json')); s=d.get('selftest',{}); print('thread:', s.get('browser',{}).get('thread'), '| worker error:', s.get('browserWorkerError')); [print('sign', x['seed'], 'len', x['length'], 'browser ms', x.get('browser',{}).get('medianMs'), 'top1', x.get('browser',{}).get('top1')) for x in s.get('signs',[])]; print('translator:', d.get('translator') or d.get('translatorError')); print('app.html:', d.get('oldAddress') or d.get('oldAddressError'))"
               echo '```'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
@@ -209,15 +181,8 @@ jobs:
           path: web/dist/
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
-        if: steps.shared.outcome == 'success'
-        with:
-          name: shared-copy
-          path: web/dist-shared/SignMate-shared-copy.zip
-          if-no-files-found: error
-
       - name: Fail the run if a required check failed
-        if: steps.tests.outcome != 'success' || steps.asl.outcome != 'success' || steps.shared.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.asl.outcome != 'success'
         run: |
-          echo "tests=${{ steps.tests.outcome }} asl=${{ steps.asl.outcome }} shared=${{ steps.shared.outcome }}"
+          echo "tests=${{ steps.tests.outcome }} asl=${{ steps.asl.outcome }}"
           exit 1

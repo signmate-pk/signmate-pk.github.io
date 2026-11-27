@@ -7,7 +7,6 @@
     "assets": "node scripts/copy-assets.mjs",
     "dev": "npm run assets && vite --host 0.0.0.0",
     "build": "npm run assets && vite build",
-    "build:shared": "npm run assets && node scripts/build-shared.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.mjs",
     "test:smoke": "npm run build && node tests/camera-smoke.mjs"

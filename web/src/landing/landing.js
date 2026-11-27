@@ -1,10 +1,10 @@
-// SignMate project page: progressive enhancement only. Without this file every section is still there, every
-// link still works (the demo buttons are plain links to app.html), and the hero clip has its own controls.
-// What it adds: the mobile menu, search and filters in the sign library, a video player for sign clips with
-// English and Urdu captions, and the live demo (camera checks first, then the real app, inline or full screen).
-// The recogniser itself is never loaded by this page: it loads inside app.html, only when the demo starts.
+// SignMate project page: progressive enhancement only. Without this file every section is still there and every
+// link still works (the demo buttons are plain links to translate/). What it adds: the mobile menu, search and
+// filters in the sign library, and the live demo (camera checks first, then the real translator, inline or full
+// screen). The recogniser itself is never loaded by this page: it loads inside translate/, only when the demo starts.
 
 import { cameraProblem } from "./camera.js";
+import { removeOldServiceWorkers } from "../no_service_worker.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -40,22 +40,6 @@ function setupNav() {
     }
   }, { rootMargin: "-40% 0px -55% 0px" });
   for (const id of links.keys()) { const section = document.getElementById(id); if (section) observer.observe(section); }
-}
-
-// The hero clip: muted, captioned, with the browser's own controls (pause, captions in English or Urdu).
-// It plays by itself only when the visitor has not asked for reduced motion, and only once it is on screen.
-function setupHero() {
-  const video = $(".hero-video");
-  if (!video || reduceMotion.matches || !("IntersectionObserver" in window)) return;
-  let started = false;
-  const observer = new IntersectionObserver((entries) => {
-    if (started || !entries.some((e) => e.isIntersecting)) return;
-    started = true;
-    observer.disconnect();
-    video.preload = "auto";
-    video.play().catch(() => { /* autoplay refused: the controls are there */ });
-  }, { threshold: 0.4 });
-  observer.observe(video);
 }
 
 function setupLibrary() {
@@ -120,49 +104,6 @@ function setupLibrary() {
   apply();
 }
 
-// Sign clips open in a dialog with caption tracks in English and Urdu (the clips are silent; the captions name
-// the sign). Without <dialog> support, the links simply open the video file.
-function setupClips() {
-  const dialog = $("#clip-dialog");
-  if (!dialog || typeof dialog.showModal !== "function") return;
-  const box = $(".clip-video", dialog);
-  const title = $(".clip-title", dialog);
-  let opener = null;
-  let trackUrls = [];
-  document.addEventListener("click", (event) => {
-    const link = event.target.closest("a.clip-link");
-    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    opener = link;
-    const urdu = document.createElement("span");
-    urdu.lang = "ur";
-    urdu.dir = "rtl";
-    urdu.textContent = link.dataset.ur || "";
-    title.replaceChildren(`${link.dataset.en} `, urdu);
-    const video = document.createElement("video");
-    Object.assign(video, { controls: true, loop: true, muted: true, playsInline: true, preload: "metadata", src: link.dataset.clip });
-    video.setAttribute("aria-label", `PSL video: ${link.dataset.en}`);
-    trackUrls.forEach((url) => URL.revokeObjectURL(url));
-    trackUrls = [];
-    const captions = [
-      ["en", "English", `PSL sign: ${link.dataset.en} (no sound)`],
-      ["ur", "اردو", `پی ایس ایل اشارہ: ${link.dataset.ur || link.dataset.en} (آواز نہیں)`],
-    ];
-    for (const [lang, label, text] of captions) {
-      const url = URL.createObjectURL(new Blob([`WEBVTT\n\n00:00.000 --> 59:59.000\n${text}\n`], { type: "text/vtt" }));
-      trackUrls.push(url);
-      const track = document.createElement("track");
-      Object.assign(track, { kind: "captions", srclang: lang, label, src: url, default: lang === "en" });
-      video.append(track);
-    }
-    box.replaceChildren(video);
-    dialog.showModal();
-    if (!reduceMotion.matches) video.play().catch(() => {});
-  });
-  dialog.addEventListener("close", () => { box.replaceChildren(); opener?.focus(); });
-  dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
-}
-
 function setupDemo() {
   const start = $("#demo-start");
   const large = $("#demo-large");
@@ -171,8 +112,8 @@ function setupDemo() {
   const reason = $("#demo-fallback-reason");
   const frame = $("#demo-frame");
   if (!start || !status || !fallback || !frame) return;
-  const appUrl = (route) => `app.html${large?.checked ? "?large=1" : ""}#/${route}`;
-  const tourLinks = $$('a[href="app.html#/tour"]');
+  const appUrl = (route) => `translate/${large?.checked ? "?large=1" : ""}#/${route}`;
+  const tourLinks = $$('a[href="translate/#/tour"]');
   const syncLinks = () => { start.href = appUrl("words"); for (const a of tourLinks) a.href = appUrl("tour"); };
   large?.addEventListener("change", () => {
     syncLinks();
@@ -225,17 +166,7 @@ function setupDemo() {
   });
 }
 
-// Offline: the same service worker as the app, registered once the page has loaded and the browser is idle,
-// and never in data-saver mode. It stores this site's own files on this device; it sends nothing anywhere.
-function registerOffline() {
-  if (!import.meta.env?.PROD || !("serviceWorker" in navigator) || !window.isSecureContext || navigator.connection?.saveData) return;
-  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 2000));
-  window.addEventListener("load", () => idle(() => navigator.serviceWorker.register(new URL("sw.js", document.baseURI), { scope: "./" }).catch(() => {})));
-}
-
 setupNav();
-setupHero();
 setupLibrary();
-setupClips();
 setupDemo();
-registerOffline();
+removeOldServiceWorkers(); // SignMate is a website only: no offline cache (CLAUDE.md 10.7)
